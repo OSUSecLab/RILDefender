@@ -10,7 +10,7 @@ This is the source code repository of our paper [Thwarting Smartphone SMS Attack
 - View past SMS attack events that occur on your device.
 
 
-![alt text](figure/framework.pdf "RILDefender Architecture")
+![RILDefender Architecture](https://github.com/OSUSecLab/RILDefender/blob/master/figure/framework.pdf)
 
 
 RILDefender is developed on top of the [Android Open Source Project](https://source.android.com/) (AOSP) and open-sourced under [Apache License Version 2.0](https://www.apache.org/licenses/LICENSE-2.0). See [LICENSE](LICENSE) and [NOTICE](NOTICE).
