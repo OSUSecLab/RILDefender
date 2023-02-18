@@ -9,9 +9,7 @@ This is the source code repository of our paper [Thwarting Smartphone SMS Attack
 - The flexible configuration of security policies per SMS exploit, SMS whitelisting, and new SMS attack signature described by `YAML` language (beta).
 - View past SMS attack events that occur on your device.
 
-
-![RILDefender Architecture](https://github.com/OSUSecLab/RILDefender/blob/master/figure/framework.pdf)
-
+![RILDefender Architecture](figure/framework.png)
 
 RILDefender is developed on top of the [Android Open Source Project](https://source.android.com/) (AOSP) and open-sourced under [Apache License Version 2.0](https://www.apache.org/licenses/LICENSE-2.0). See [LICENSE](LICENSE) and [NOTICE](NOTICE).
 
