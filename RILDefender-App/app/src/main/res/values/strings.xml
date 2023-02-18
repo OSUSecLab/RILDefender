@@ -1,0 +1,21 @@
+<resources>
+    <string name="app_name">RILDefender</string>
+    <!-- Settings Activity Title -->
+    <string name="title_activity_settings">SettingsActivity</string>
+
+    <!-- Preference Titles -->
+    <string name="messages_header">RILDefender Settings</string>
+    <string name="security_level">Security Level</string>
+
+    <string name="silent_sms_header">Silent SMS</string>
+    <string name="flash_sms_header">Flash SMS</string>
+    <string name="binary_sms_header">Binary SMS</string>
+    <string name="fbs_sms_header">Fake Base Station SMS</string>
+    <string name="malware_sms_header">Malware SMS</string>
+    <string name="proactive_sms_header">Proactive SIM SMS</string>
+    <string name="sms_whitelist_header">SMS Whitelist</string>
+
+    <string name="sms_whitelist">App whitelist (process names separated by semicolons)</string>
+    <string name="sms_history">SMS Alert History</string>
+
+</resources>

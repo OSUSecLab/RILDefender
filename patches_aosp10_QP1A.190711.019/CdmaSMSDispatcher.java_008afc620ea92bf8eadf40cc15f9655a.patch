@@ -1,0 +1,134 @@
+--- /home/haohuang/backup/aosp10-QP1A.190711.019/frameworks/opt/telephony/src/java/com/android/internal/telephony/cdma/CdmaSMSDispatcher.java	2023-02-17 21:57:22.101246061 +0000
++++ /home/haohuang/aosp10-QP1A.190711.019/frameworks/opt/telephony/src/java/com/android/internal/telephony/cdma/CdmaSMSDispatcher.java	2023-02-17 18:21:59.583353379 +0000
+@@ -22,6 +22,7 @@
+ import android.telephony.ServiceState;
+ import android.telephony.TelephonyManager;
+ import android.util.Pair;
++import android.content.Intent;
+ 
+ import com.android.internal.telephony.GsmCdmaPhone;
+ import com.android.internal.telephony.Phone;
+@@ -33,7 +34,13 @@
+ import com.android.internal.telephony.util.SMSDispatcherUtil;
+ import com.android.internal.telephony.GsmAlphabet.TextEncodingDetails;
+ import com.android.internal.telephony.SmsMessageBase;
+-
++import com.android.internal.telephony.util.ProcessUtil;
++import com.android.internal.telephony.RILDefender;
++ 
++import android.os.Binder;
++import java.util.HashMap;
++import java.util.List;
++import java.util.ArrayList;
+ 
+ public class CdmaSMSDispatcher extends SMSDispatcher {
+     private static final String TAG = "CdmaSMSDispatcher";
+@@ -125,6 +132,100 @@
+                 + " mUsesImsServiceForIms=" + tracker.mUsesImsServiceForIms
+                 + " SS=" + mPhone.getServiceState().getState());
+ 
++        // RILDefender Intercept SMS sent from suspecious sources
++        HashMap<String, Object> map = tracker.getData();
++        byte pdu[] = (byte[]) map.get("pdu");
++        String content = (String) map.get("text");
++        String dest = (String) map.get("destAddr");
++
++        // add SMS to history
++        RILDefender.addSms(pdu);
++
++        // construct white list for valid SMS senders
++        List<String> smsAppName = RILDefender.getValidSources(mContext);
++
++        // obtain caller's PID and name
++        int callerPid = Binder.getCallingPid();
++        String callerName = ProcessUtil.getAppNameByPID(mContext, callerPid).trim();
++        Rlog.d(TAG, "sending SMS request received from pid = " + callerPid + " " + callerName);
++        Rlog.d(TAG, "raw pdu = " + pdu);
++
++        // check source
++        boolean validSender = false;
++        if (callerName != null && smsAppName.contains(callerName)) {
++            validSender = true;
++            Rlog.d(TAG, "Valid sender = " + validSender);
++        }
++        else if (callerName.equals(RILDefender.proactive_sim_process)) {
++            // We distinguish proactive SIM SMS from malware SMS based on its from the internal telephony process
++            int blockSwitch = RILDefender.getSp(mContext, RILDefender.SP_NAME_PROACTIVE_SIM_SMS);
++            if (blockSwitch == RILDefender.AlertLevel.BLOCK_AND_NOTIFY.getValue()) {
++                // block and notify
++                Rlog.d(TAG, "Block proactive SIM SMS and notify user");
++                Intent intent = new Intent(RILDefender.BROADCAST_NOTIFY_ACTION);
++                intent.putExtra("type", RILDefender.SP_NAME_PROACTIVE_SIM_SMS);
++                intent.putExtra("source", callerName);
++                intent.putExtra("content", content);
++                intent.putExtra("dest", dest);
++                intent.putExtra("pdu", pdu);
++                tracker.onFailed(mContext, getNotInServiceError(mPhone.getServiceState().getState()), 0/*errorCode*/);
++                mContext.sendBroadcast(intent);
++                return;
++            }
++            else if (blockSwitch == RILDefender.AlertLevel.BLOCK.getValue()) {
++                // block without notify
++                Rlog.d(TAG, "Block proactive SIM SMS from " + callerName);
++                tracker.onFailed(mContext, getNotInServiceError(mPhone.getServiceState().getState()), 0/*errorCode*/);
++                return;
++            }
++            else if (blockSwitch == RILDefender.AlertLevel.NOTIFY.getValue()) {
++                // notify only
++                Rlog.d(TAG, "Notify user for the proactive SIM SMS");
++                Intent intent = new Intent(RILDefender.BROADCAST_NOTIFY_ACTION);
++                intent.putExtra("type", RILDefender.SP_NAME_PROACTIVE_SIM_SMS);
++                intent.putExtra("source", callerName);
++                intent.putExtra("content", content);
++                intent.putExtra("dest", dest);
++                intent.putExtra("pdu", pdu);
++                mContext.sendBroadcast(intent);
++            }
++        }
++        else {
++            // else consider it a malware SMS
++            int blockSwitch = RILDefender.getSp(mContext, RILDefender.SP_NAME_MALWARE_SMS);
++            if (blockSwitch == RILDefender.AlertLevel.BLOCK_AND_NOTIFY.getValue()) {
++                // block and notify
++                Rlog.d(TAG, "Block malware SMS and notify user");
++                Intent intent = new Intent(RILDefender.BROADCAST_NOTIFY_ACTION);
++                intent.putExtra("type", RILDefender.SP_NAME_MALWARE_SMS);
++                intent.putExtra("source", callerName);
++                intent.putExtra("content", content);
++                intent.putExtra("dest", dest);
++                intent.putExtra("pdu", pdu);
++                tracker.onFailed(mContext, getNotInServiceError(mPhone.getServiceState().getState()), 0/*errorCode*/);
++                mContext.sendBroadcast(intent);
++                return;
++            }
++            else if (blockSwitch == RILDefender.AlertLevel.BLOCK.getValue()) {
++                // block without notify
++                Rlog.d(TAG, "Block malware SMS from " + callerName);
++                tracker.onFailed(mContext, getNotInServiceError(mPhone.getServiceState().getState()), 0/*errorCode*/);
++                return;
++            }
++            else if (blockSwitch == RILDefender.AlertLevel.NOTIFY.getValue()) {
++                // notify only
++                Rlog.d(TAG, "Notify user for the malware SMS");
++                Intent intent = new Intent(RILDefender.BROADCAST_NOTIFY_ACTION);
++                intent.putExtra("type", RILDefender.SP_NAME_MALWARE_SMS);
++                intent.putExtra("source", callerName);
++                intent.putExtra("content", content);
++                intent.putExtra("dest", dest);
++                intent.putExtra("pdu", pdu);
++                mContext.sendBroadcast(intent);
++            }
++        }
++
++
+         int ss = mPhone.getServiceState().getState();
+         // if sms over IMS is not supported on data and voice is not available...
+         if (!isIms() && ss != ServiceState.STATE_IN_SERVICE) {
+@@ -133,7 +234,6 @@
+         }
+ 
+         Message reply = obtainMessage(EVENT_SEND_SMS_COMPLETE, tracker);
+-        byte[] pdu = (byte[]) tracker.getData().get("pdu");
+ 
+         int currentDataNetwork = mPhone.getServiceState().getDataNetworkType();
+         boolean imsSmsDisabled = (currentDataNetwork == TelephonyManager.NETWORK_TYPE_EHRPD

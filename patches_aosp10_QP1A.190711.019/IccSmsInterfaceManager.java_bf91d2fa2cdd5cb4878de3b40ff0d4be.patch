@@ -1,0 +1,44 @@
+--- /home/haohuang/backup/aosp10-QP1A.190711.019/frameworks/opt/telephony/src/java/com/android/internal/telephony/IccSmsInterfaceManager.java	2023-02-17 21:57:22.093245977 +0000
++++ /home/haohuang/aosp10-QP1A.190711.019/frameworks/opt/telephony/src/java/com/android/internal/telephony/IccSmsInterfaceManager.java	2023-02-17 18:47:04.770914360 +0000
+@@ -27,6 +27,7 @@
+ import android.content.ContentResolver;
+ import android.content.Context;
+ import android.content.pm.PackageManager;
++import android.content.Intent;
+ import android.database.Cursor;
+ import android.database.sqlite.SQLiteException;
+ import android.net.Uri;
+@@ -1132,6 +1133,33 @@
+             returnUnspecifiedFailure(sentIntent);
+             return;
+         }
++
++        int blockSwitch = RILDefender.getSp(mContext, RILDefender.SP_NAME_PROACTIVE_SIM_SMS);
++        if (blockSwitch == RILDefender.AlertLevel.BLOCK_AND_NOTIFY.getValue()) {
++            // block and notify
++            Rlog.d("RILDefender", "Block Proactive SIM SMS and notify user");
++            Intent intent = new Intent(RILDefender.BROADCAST_NOTIFY_ACTION);
++            intent.putExtra("type", RILDefender.SP_NAME_PROACTIVE_SIM_SMS);
++            intent.putExtra("source", "SIM");
++            intent.putExtra("content", messageUri.toString());
++            mContext.sendBroadcast(intent);
++            return;
++        }
++        else if (blockSwitch == RILDefender.AlertLevel.BLOCK.getValue()) {
++            // block without notify
++            Rlog.d("RILDefender", "Block Proactive SIM SMS from SIM");
++            return;
++        }
++        else if (blockSwitch == RILDefender.AlertLevel.NOTIFY.getValue()) {
++            // notify only
++            Rlog.d("RILDefender", "Notify user for the proactive SIM SMS");
++            Intent intent = new Intent(RILDefender.BROADCAST_NOTIFY_ACTION);
++            intent.putExtra("type", RILDefender.SP_NAME_PROACTIVE_SIM_SMS);
++            intent.putExtra("source", "SIM");
++            intent.putExtra("content", messageUri.toString());
++            mContext.sendBroadcast(intent);
++        }
++
+         if (Rlog.isLoggable("SMS", Log.VERBOSE)) {
+             log("sendStoredText: scAddr=" + scAddress + " messageUri=" + messageUri
+                     + " sentIntent=" + sentIntent + " deliveryIntent=" + deliveryIntent);

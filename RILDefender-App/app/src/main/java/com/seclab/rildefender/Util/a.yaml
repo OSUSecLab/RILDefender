@@ -1,0 +1,22 @@
+
+CustomSMS1:
+  {lvalue: [ 'sms.pid' ], condition: '==', rvalue: 0x20, securityLevel: 1}
+
+FBSSMS: { lvalue: [
+  { lvalue: [ 'bs.ss' ], condition: '>', rvalue: -40},
+  { lvalue: [ 'bs.param' ], condition: '==', rvalue: <Valid Value>}
+], opcode: [ '|' ], conditon: '==', rvalue: 1}
+
+MalwareSMS: { lvalue: [ 'sms.src' ], condition: '!=', rvalue: <Default SMS app> }
+
+ProactiveSimSMS: { lvalue: [ 'sms.src' ], condition: '==', rvalue: <Telephony Process>}
+
+<Rule>:
+  lvalue: <Expr>
+  OpCode: <Opcode>
+  condition: <Cond>
+  rvalue: <Expr>
+
+
+
+

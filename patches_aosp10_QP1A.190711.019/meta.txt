@@ -1,0 +1,15 @@
+ADD	CellState.java_14349550551512b900d4fee5b73cf95e	frameworks/opt/telephony/src/java/com/android/internal/telephony/CellState.java
+PATCH	GsmCdmaPhone.java_e002658140004c67f46d4bdc38209b0b.patch	frameworks/opt/telephony/src/java/com/android/internal/telephony/GsmCdmaPhone.java
+PATCH	ServiceStateTracker.java_a1b01718a1f36e5c7371c10511dd819e.patch	frameworks/opt/telephony/src/java/com/android/internal/telephony/ServiceStateTracker.java
+ADD	RILSigEvaluator.java_0f4ce652591a0441498a19a272828472	frameworks/opt/telephony/src/java/com/android/internal/telephony/RILSigEvaluator.java
+PATCH	InboundSmsHandler.java_2ea7c1c3dc982cc5f35266da067a7a7b.patch	frameworks/opt/telephony/src/java/com/android/internal/telephony/InboundSmsHandler.java
+PATCH	GsmCdmaCallTracker.java_e6869d3162212c25e947375c00dca295.patch	frameworks/opt/telephony/src/java/com/android/internal/telephony/GsmCdmaCallTracker.java
+ADD	RILDefender.java_869d0dc6037831361a43d43e2c6d6d3c	frameworks/opt/telephony/src/java/com/android/internal/telephony/RILDefender.java
+PATCH	IccSmsInterfaceManager.java_bf91d2fa2cdd5cb4878de3b40ff0d4be.patch	frameworks/opt/telephony/src/java/com/android/internal/telephony/IccSmsInterfaceManager.java
+PATCH	CdmaSMSDispatcher.java_008afc620ea92bf8eadf40cc15f9655a.patch	frameworks/opt/telephony/src/java/com/android/internal/telephony/cdma/CdmaSMSDispatcher.java
+PATCH	CatService.java_20600f6f1310f201ebf93d57cd3f7b81.patch	frameworks/opt/telephony/src/java/com/android/internal/telephony/cat/CatService.java
+PATCH	GsmInboundSmsHandler.java_b9c68ceb12f68c18b3900a510192d59c.patch	frameworks/opt/telephony/src/java/com/android/internal/telephony/gsm/GsmInboundSmsHandler.java
+PATCH	GsmSMSDispatcher.java_292e35150445fc22447bccd3b550b387.patch	frameworks/opt/telephony/src/java/com/android/internal/telephony/gsm/GsmSMSDispatcher.java
+ADD	ProcessUtil.java_128b0e8735f62106f9a77dbd17a91913	frameworks/opt/telephony/src/java/com/android/internal/telephony/util/ProcessUtil.java
+PATCH	SignalStrength.java_f150f4970d07338da447aea7325064b7.patch	frameworks/base/telephony/java/android/telephony/SignalStrength.java
+PATCH	SmsMessage.java_080ef0ef07638afeb4fe20d1a4013046.patch	frameworks/base/telephony/java/com/android/internal/telephony/gsm/SmsMessage.java

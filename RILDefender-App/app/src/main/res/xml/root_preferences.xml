@@ -1,0 +1,105 @@
+<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <!--    silent sms-->
+    <PreferenceCategory app:title="@string/silent_sms_header">
+
+        <ListPreference
+            app:defaultValue="Allow"
+            app:entries="@array/switch_entries"
+            app:entryValues="@array/switch_entries"
+            app:key="silent_sms"
+            app:title="@string/security_level"
+            app:useSimpleSummaryProvider="true" />
+
+    </PreferenceCategory>
+
+    <!--    flash sms-->
+    <PreferenceCategory app:title="@string/flash_sms_header">
+
+        <ListPreference
+            app:defaultValue="Allow"
+            app:entries="@array/switch_entries"
+            app:entryValues="@array/switch_entries"
+            app:key="flash_sms"
+            app:title="@string/security_level"
+            app:useSimpleSummaryProvider="true" />
+
+    </PreferenceCategory>
+
+
+    <!--    binary sms-->
+    <PreferenceCategory app:title="@string/binary_sms_header">
+
+        <ListPreference
+            app:defaultValue="Allow"
+            app:entries="@array/switch_entries"
+            app:entryValues="@array/switch_entries"
+            app:key="binary_sms"
+            app:title="@string/security_level"
+            app:useSimpleSummaryProvider="true" />
+
+    </PreferenceCategory>
+
+
+    <!--    fbs sms-->
+    <PreferenceCategory app:title="@string/fbs_sms_header">
+
+        <ListPreference
+            app:defaultValue="Allow"
+            app:entries="@array/switch_entries"
+            app:entryValues="@array/switch_entries"
+            app:key="fbs_sms"
+            app:title="@string/security_level"
+            app:useSimpleSummaryProvider="true" />
+
+    </PreferenceCategory>
+
+
+    <!--    malware sms-->
+    <PreferenceCategory app:title="@string/malware_sms_header">
+
+        <ListPreference
+            app:defaultValue="Allow"
+            app:entries="@array/switch_entries"
+            app:entryValues="@array/switch_entries"
+            app:key="malware_sms"
+            app:title="@string/security_level"
+            app:useSimpleSummaryProvider="true" />
+
+    </PreferenceCategory>
+
+
+    <!--    proactive SIM sms-->
+    <PreferenceCategory app:title="@string/proactive_sms_header">
+
+        <ListPreference
+            app:defaultValue="Allow"
+            app:entries="@array/switch_entries"
+            app:entryValues="@array/switch_entries"
+            app:key="proactive_sim_sms"
+            app:title="@string/security_level"
+            app:useSimpleSummaryProvider="true" />
+
+    </PreferenceCategory>
+
+
+    <!--    SMS White list-->
+    <PreferenceCategory app:title="Misc Configuration">
+        <EditTextPreference
+            app:key="sms_whitelist"
+            app:title="@string/sms_whitelist"
+            app:useSimpleSummaryProvider="true" />
+    </PreferenceCategory>
+
+
+    <Preference
+        app:key="sms_history"
+        app:title="@string/sms_history"
+        app:useSimpleSummaryProvider="true" />
+
+    <Preference
+        app:key="update_yaml"
+        app:title="Update YAML Attack Signature"
+        app:useSimpleSummaryProvider="true" />
+
+</PreferenceScreen>
