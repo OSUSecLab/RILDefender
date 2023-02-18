@@ -160,7 +160,7 @@ The following shows the method used to install `RILDefender.zip` into an Android
 
 ```
 $ adb reboot fastboot
-$ fastboot -w update RILDefender.zip  
+$ fastboot -w update rildefender.zip  
 ```
 
 Note: There are alternate method to Flash image, depending on the phone model:
