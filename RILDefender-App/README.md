@@ -21,7 +21,7 @@ After compilation, you can easily use the Android Studio UI to install it to you
 
 ## Required Permissions
 
-The RILDefender app is root-free, and requires the following permissions (declared in [Androidmanifest.xml](./app/src/main/AndroidManifest.xml)) with justifications:
+The RILDefender app is root-free, and requires the following permissions (declared in [AndroidManifest.xml](./app/src/main/AndroidManifest.xml)) with justifications:
 
 - `android.permission.FOREGROUND_SERVICE` to run the RILDefender notification service
 - `android.permission.POST_NOTIFICATIONS` to post notifications
