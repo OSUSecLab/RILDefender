@@ -191,7 +191,7 @@ $ fastboot flash system system.img
  
 The RILDefender app is compiled as a standalone fashion. You can also directly use the precompiled [RILDefender.apk](prebuild/RILDefender.apk). 
 
-For detailed instructions, please refer to the RILDefender app [README](RILDefender-app/README.md).
+For detailed instructions, please refer to the RILDefender app [README](RILDefender-App/README.md).
 
 
 ## VIII. TODO
