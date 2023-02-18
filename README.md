@@ -51,8 +51,7 @@ $ repo sync -c -j8
 ```
 (**Warning**: This step takes **HOURS** to complete: `-j8` lets us use 8 multiple threads)
 
-For a list of branches, see [Source code tags and builds]
-    (https://source.android.com/setup/start/build-numbers#source-code-tags-and-builds) (e.g., used android-10.0.0_r1 for google pixel XL). For RILDefender, the currently supported AOSP versions are:
+For a list of branches, see [Source code tags and builds](https://source.android.com/setup/start/build-numbers#source-code-tags-and-builds) (e.g., used android-10.0.0_r1 for google pixel XL). For RILDefender, the currently supported AOSP versions are:
 
 | Build ID        | Tag               | Version      | Supported Devices      |
 |-----------------|:------------------|--------------|:-----------------------|
