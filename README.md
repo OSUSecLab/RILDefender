@@ -43,9 +43,6 @@ $ mkdir <AOSP_ROOT>
 $ cd <AOSP_ROOT>
 $ git config --global user.name <Your Name>
 $ git config --global user.email you@example.com
-$ repo init -u https://android.googlesource.com/platform/manifest
-$ repo init -u https://android.googlesource.com/platform/manifest -b master
-$ repo sync  -c -j8`
 $ repo init -u https://android.googlesource.com/platform/manifest -b <branch>
 $ repo sync -c -j8 
 ```
