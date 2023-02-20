@@ -6,7 +6,7 @@ android {
     compileSdk 33
 
     defaultConfig {
-        applicationId "com.seclab.rildefender.test"
+        applicationId "com.seclab.rildefender"
         minSdk 25
         targetSdk 33
         versionCode 1

@@ -47,7 +47,7 @@ public class ListenService extends Service {
         if (!measureOnly) {
             // register broadcast receiver for events from the RIL layer
             IntentFilter filter = new IntentFilter();
-            filter.addAction("com.seclab.rilmediator.NOTIFY");
+            filter.addAction("com.seclab.RILDefender.NOTIFY");
             receiver = new RILReceiver();
             this.registerReceiver(receiver, filter);
 
@@ -123,7 +123,7 @@ public class ListenService extends Service {
         @Override
         public void onReceive(Context context, Intent intent) {
             System.out.println("OnReceive");
-            if (intent.getAction().equals("com.seclab.rilmediator.NOTIFY")) {
+            if (intent.getAction().equals("com.seclab.RILDefender.NOTIFY")) {
 
                 // send notification
                 NotificationCompat.Builder builder = new NotificationCompat.Builder(context, "ril_notify")

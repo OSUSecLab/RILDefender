@@ -1,5 +1,5 @@
 --- /home/haohuang/backup/aosp10-QP1A.190711.019/frameworks/opt/telephony/src/java/com/android/internal/telephony/InboundSmsHandler.java	2023-02-17 21:57:22.093245977 +0000
-+++ /home/haohuang/aosp10-QP1A.190711.019/frameworks/opt/telephony/src/java/com/android/internal/telephony/InboundSmsHandler.java	2023-02-17 18:20:23.470370481 +0000
++++ /home/haohuang/aosp10-QP1A.190711.019/frameworks/opt/telephony/src/java/com/android/internal/telephony/InboundSmsHandler.java	2023-02-20 02:27:34.735444698 +0000
 @@ -63,6 +63,9 @@
  import android.text.TextUtils;
  import android.util.LocalLog;
@@ -25,11 +25,11 @@
  
 +        // RILDefender: handle normal SMS text messages
 +        // Detected FBS SMS
-+        double averageRSSI = RILDefender.getAverageRSSIInSignalHistory();
++        // double averageRSSI = RILDefender.getAverageRSSIInSignalHistory();
 +        CellState cs = RILDefender.getCurrentCellState();
 +        boolean suspecious = false;
 +
-+        if (averageRSSI > RILDefender.RSSI_THRESHOLD)
++        if (cs.getSignalStrength() < 0 && cs.getSignalStrength() > RILDefender.RSSI_THRESHOLD)
 +            // check if average RSSI is over a threshold
 +            suspecious = true;
 +        else {

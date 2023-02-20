@@ -21,10 +21,10 @@ public class FileUtil {
 
     public static String baseDir = Environment.getExternalStorageDirectory().getPath();
     // TODO switch to app's private folder
-    public static String logFile = baseDir + "/Download/log.txt";
-    public static String smsRecordFile = baseDir + "/Download/sms.txt";
-    public static String yamlFile = baseDir + "/Download/signatures.yaml";
-    public static String jsonFile = baseDir + "/Download/results.json";
+    public static String logFile = baseDir + "/log.txt";
+    public static String smsRecordFile = baseDir + "/sms.txt";
+    public static String yamlFile = baseDir + "/signatures.yaml";
+    public static String jsonFile = baseDir + "/results.json";
 
     public static void writeToFile(Context context, String path, String content, boolean append) {
         try {
@@ -99,6 +99,7 @@ public class FileUtil {
 
     public static JSONArray readSMSEventsFromFile(Context context) {
         try {
+            createFileIfNotExist(context, smsRecordFile);
             String jsonStr = "[\n" + getStringFromFile(context, smsRecordFile) + "\n]";
             JSONArray jsonArray = new JSONArray(jsonStr);
             return jsonArray;

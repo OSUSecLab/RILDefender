@@ -2,9 +2,9 @@ ADD	CellState.java_14349550551512b900d4fee5b73cf95e	frameworks/opt/telephony/src
 PATCH	GsmCdmaPhone.java_e002658140004c67f46d4bdc38209b0b.patch	frameworks/opt/telephony/src/java/com/android/internal/telephony/GsmCdmaPhone.java
 PATCH	ServiceStateTracker.java_a1b01718a1f36e5c7371c10511dd819e.patch	frameworks/opt/telephony/src/java/com/android/internal/telephony/ServiceStateTracker.java
 ADD	RILSigEvaluator.java_0f4ce652591a0441498a19a272828472	frameworks/opt/telephony/src/java/com/android/internal/telephony/RILSigEvaluator.java
-PATCH	InboundSmsHandler.java_2ea7c1c3dc982cc5f35266da067a7a7b.patch	frameworks/opt/telephony/src/java/com/android/internal/telephony/InboundSmsHandler.java
-PATCH	GsmCdmaCallTracker.java_e6869d3162212c25e947375c00dca295.patch	frameworks/opt/telephony/src/java/com/android/internal/telephony/GsmCdmaCallTracker.java
-ADD	RILDefender.java_869d0dc6037831361a43d43e2c6d6d3c	frameworks/opt/telephony/src/java/com/android/internal/telephony/RILDefender.java
+PATCH	InboundSmsHandler.java_b0372367f50e5700e4af5e54e28ce55b.patch	frameworks/opt/telephony/src/java/com/android/internal/telephony/InboundSmsHandler.java
+PATCH	GsmCdmaCallTracker.java_0a5ee11d7fcec7a5f88b8280dc853546.patch	frameworks/opt/telephony/src/java/com/android/internal/telephony/GsmCdmaCallTracker.java
+ADD	RILDefender.java_250089e2004f92f995a2c22ec7fed754	frameworks/opt/telephony/src/java/com/android/internal/telephony/RILDefender.java
 PATCH	IccSmsInterfaceManager.java_bf91d2fa2cdd5cb4878de3b40ff0d4be.patch	frameworks/opt/telephony/src/java/com/android/internal/telephony/IccSmsInterfaceManager.java
 PATCH	CdmaSMSDispatcher.java_008afc620ea92bf8eadf40cc15f9655a.patch	frameworks/opt/telephony/src/java/com/android/internal/telephony/cdma/CdmaSMSDispatcher.java
 PATCH	CatService.java_20600f6f1310f201ebf93d57cd3f7b81.patch	frameworks/opt/telephony/src/java/com/android/internal/telephony/cat/CatService.java

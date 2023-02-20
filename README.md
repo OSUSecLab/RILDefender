@@ -196,6 +196,7 @@ For detailed instructions, please refer to the RILDefender app [README](RILDefen
 
 ## VIII. TODO
 
+- Sender SMS whitelisting
 - Release RILDefender for AOSP7, 11, 12, 13
 - Extend RILDefender's support for other AOSP versions
 

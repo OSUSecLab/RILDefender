@@ -18,6 +18,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.HashMap;
 import java.util.Arrays;
+import java.lang.Exception; 
+
 
 public class RILDefender {
 
@@ -238,17 +240,27 @@ public class RILDefender {
         if (historySms.size() >= SMS_MAX_LENGTH) {
             historySms.remove(0);
         }
-        SmsMessage sms = SmsMessage.createFromPdu(pdu);
-        historySms.add(sms);
-        Rlog.d("RILDefender", "Add SMS: " + sms.toString() + " history length: " + historySms.size());
+        try {
+            SmsMessage sms = SmsMessage.createFromPdu(pdu);
+            historySms.add(sms);
+            Rlog.d("RILDefender", "Add SMS: " + sms.toString() + " history length: " + historySms.size());
+        } catch(Exception e) {
+            // TODO: known issue: parse outbound SMS may fail
+            Rlog.d("RILDefender", "Add SMS failed!");
+        }
     }
 
     public static void addSms(SmsMessage sms) {
         if (historySms.size() >= SMS_MAX_LENGTH) {
             historySms.remove(0);
         }
-        historySms.add(sms);
-        Rlog.d("RILDefender", "Add SMS: " + sms.toString() + " history length: " + historySms.size());
+        try {
+            historySms.add(sms);
+            Rlog.d("RILDefender", "Add SMS: " + sms.toString() + " history length: " + historySms.size());
+        } catch(Exception e) {
+            // TODO: known issue: parse outbound SMS may fail
+            Rlog.d("RILDefender", "Add SMS failed!");
+        }
     }
 
     public static SmsMessage getSms(int index) {
