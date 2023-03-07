@@ -18,7 +18,7 @@ RILDefender is developed on top of the [Android Open Source Project](https://sou
 
 **Caveat1**: This build took around 190GB of free disk space and up to a few hours to complete – otherwise don’t waste your time and space.
 
-**Caveat2**: Flash RILDefender image will require a **BOOTLOADER-UNLOCKED** Android device and will likely wipe out your local data and thus is not recommended to backup and refrain from using your personal devices.
+**Caveat2**: Flash RILDefender image will require a **BOOTLOADER-UNLOCKED** Android device and will likely wipe out your local data and thus is recommended to backup and refrain from using your personal devices.
 
 **Caveat3**: PLEASE DO NOT FLASH INCOMPATIBLE VERSIONS OF IMAGES TO YOUR PHONE, as this might cause issues such as **boot loop**. Please use the Android versions that we have tested (see the table below). We might extend the support for other and future AOSP versions.
 
