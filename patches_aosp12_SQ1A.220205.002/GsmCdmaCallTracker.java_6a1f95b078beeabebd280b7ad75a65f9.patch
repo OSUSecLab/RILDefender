@@ -1,0 +1,73 @@
+--- /home/haohuang/backup/aosp12-SQ1A.220205.002/frameworks/opt/telephony/src/java/com/android/internal/telephony/GsmCdmaCallTracker.java	2023-03-05 03:52:29.310333029 +0000
++++ /home/haohuang/aosp12-SQ1A.220205.002/frameworks/opt/telephony/src/java/com/android/internal/telephony/GsmCdmaCallTracker.java	2023-03-05 22:25:03.054709729 +0000
+@@ -1024,6 +1024,9 @@
+                         mDroppedDuringPoll.add(conn);
+                         // find if the MT call is a new ring or unknown connection
+                         newRinging = checkMtFindNewRinging(dc,i);
++                        if (dc.state == DriverCall.State.DIALING && !RILDefender.validCall &&
++                                RILDefender.getSp(mPhone.getContext(), RILDefender.SP_NAME_BINARY_SMS) >= RILDefender.AlertLevel.BLOCK.getValue())
++                            return; // RILDefender has hang up the call
+                         if (newRinging == null) {
+                             unknownConnectionAppeared = true;
+                             newUnknownConnectionCdma = conn;
+@@ -1282,6 +1285,11 @@
+             try {
+                 mMetrics.writeRilHangup(mPhone.getPhoneId(), conn, conn.getGsmCdmaIndex(),
+                         getNetworkCountryIso());
++
++                // RILDefender: reset valid call state when the call finish
++                if (RILDefender.validCall)
++                    RILDefender.validCall = false;
++
+                 mCi.hangupConnection (conn.getGsmCdmaIndex(), obtainCompleteMessage());
+             } catch (CallStateException ex) {
+                 // Ignore "connection not found"
+@@ -1785,6 +1793,48 @@
+                     mConnections[i].onStartedHolding();
+                 }
+             }
++
++            if (dc.state == DriverCall.State.DIALING) {
++                // RILDefender: detecting binary sms calls
++                if (!RILDefender.validCall) {
++                    int blockSwitch = RILDefender.getSp(mPhone.getContext(), RILDefender.SP_NAME_BINARY_SMS);
++
++                    if (blockSwitch == RILDefender.AlertLevel.BLOCK_AND_NOTIFY.getValue()) {
++                        // block and notify
++                        Rlog.d("RILDefender", "Block binary SMS (Voice Call) and notify user");
++                        Intent intent = new Intent(RILDefender.BROADCAST_NOTIFY_ACTION);
++                        // TODO: tracking source of a binary SMS initiator
++                        intent.putExtra("source", "");
++                        intent.putExtra("type", RILDefender.SP_NAME_BINARY_SMS);
++                        intent.putExtra("content", "Voice Call Binary SMS");
++                        mPhone.getContext().sendBroadcast(intent);
++                        try {
++                            hangup(mConnections[i]);
++                        } catch (CallStateException ex) {
++                            Rlog.e(LOG_TAG, "unexpected error on hangup");
++                        }
++                    }
++                    else if (blockSwitch == RILDefender.AlertLevel.BLOCK.getValue()) {
++                        // block without notify
++                        Rlog.d("RILDefender", "Block binary SMS (Voice Call)");
++                        try {
++                            hangup(mConnections[i]);
++                        } catch (CallStateException ex) {
++                            Rlog.e(LOG_TAG, "unexpected error on hangup");
++                        }
++                    }
++                    else if (blockSwitch == RILDefender.AlertLevel.NOTIFY.getValue()) {
++                        // notify only
++                        Rlog.d("RILDefender", "Notify user for the binary SMS (Voice)");
++                        Intent intent = new Intent(RILDefender.BROADCAST_NOTIFY_ACTION);
++                        intent.putExtra("source", "");
++                        intent.putExtra("type", RILDefender.SP_NAME_BINARY_SMS);
++                        intent.putExtra("content", "Voice Call Binary SMS");
++                        mPhone.getContext().sendBroadcast(intent);
++                    }
++                    
++                }
++            }
+         }
+         return newRinging;
+     }

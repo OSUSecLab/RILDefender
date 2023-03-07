@@ -1,0 +1,44 @@
+--- /home/haohuang/backup/aosp11-RQ3A.211001.001/frameworks/opt/telephony/src/java/com/android/internal/telephony/GsmCdmaPhone.java	2023-03-05 03:52:02.750060152 +0000
++++ /home/haohuang/aosp11-RQ3A.211001.001/frameworks/opt/telephony/src/java/com/android/internal/telephony/GsmCdmaPhone.java	2023-03-05 21:14:35.330999784 +0000
+@@ -79,6 +79,7 @@
+ import android.text.TextUtils;
+ import android.util.Log;
+ import android.util.Pair;
++import android.os.Binder;
+ 
+ import com.android.ims.ImsManager;
+ import com.android.internal.annotations.VisibleForTesting;
+@@ -119,6 +120,9 @@
+ import java.util.regex.Matcher;
+ import java.util.regex.Pattern;
+ 
++import com.android.internal.telephony.util.ProcessUtil;
++import com.android.internal.telephony.RILDefender;
++
+ /**
+  * {@hide}
+  */
+@@ -1498,6 +1502,23 @@
+             ResultReceiver wrappedCallback)
+             throws CallStateException {
+ 
++        // RILDefender: Detect voice calls from untrusted apps
++        // obtain caller's PID and name
++        int callerPid = Binder.getCallingPid();
++        String callerName = ProcessUtil.getAppNameByPID(getContext(), callerPid).trim();
++        Rlog.d(LOG_TAG, "Dialing request received from pid = " + callerPid + " " + callerName);
++
++        // check source
++        if (callerName != null && RILDefender.trustedDialerAppName.contains(callerName)) {
++            Rlog.d(LOG_TAG, "Setting validCall = true");
++            RILDefender.validCall = true;
++        } else {
++            Rlog.d(LOG_TAG, "Voice call initated from an untrusted app " + callerName);
++            RILDefender.validCall = false;
++            // do not let suspecious app do dialing
++            //return null;
++        }
++
+         // Need to make sure dialString gets parsed properly
+         String newDialString = PhoneNumberUtils.stripSeparators(dialString);
+ 

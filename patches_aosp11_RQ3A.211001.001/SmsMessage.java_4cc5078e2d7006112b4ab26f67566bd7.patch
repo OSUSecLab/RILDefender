@@ -1,0 +1,22 @@
+--- /home/haohuang/backup/aosp11-RQ3A.211001.001/frameworks/base/telephony/java/com/android/internal/telephony/gsm/SmsMessage.java	2023-03-05 03:52:06.770101453 +0000
++++ /home/haohuang/aosp11-RQ3A.211001.001/frameworks/base/telephony/java/com/android/internal/telephony/gsm/SmsMessage.java	2023-03-05 21:13:11.826143993 +0000
+@@ -1128,7 +1128,7 @@
+      * Returns the TP-Data-Coding-Scheme byte, for acknowledgement of SMS-PP download messages.
+      * @return the TP-DCS field of the SMS header
+      */
+-    int getDataCodingScheme() {
++    public int getDataCodingScheme() {
+         return mDataCodingScheme;
+     }
+ 
+@@ -1666,6 +1666,10 @@
+                 (mProtocolIdentifier == 0x7f || mProtocolIdentifier == 0x7c);
+     }
+ 
++    boolean isClassZero() {
++        return messageClass == MessageClass.CLASS_0;
++    }
++
+     public int getNumOfVoicemails() {
+         /*
+          * Order of priority if multiple indications are present is 1.UDH,

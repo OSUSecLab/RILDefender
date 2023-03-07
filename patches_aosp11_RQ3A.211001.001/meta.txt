@@ -1,0 +1,14 @@
+ADD	CellState.java_14349550551512b900d4fee5b73cf95e	frameworks/opt/telephony/src/java/com/android/internal/telephony/CellState.java
+PATCH	GsmCdmaPhone.java_1f1b055deeab662128d628a2f325a7f8.patch	frameworks/opt/telephony/src/java/com/android/internal/telephony/GsmCdmaPhone.java
+PATCH	ServiceStateTracker.java_f9ae7faca9f0f7a041629af4162ec0d9.patch	frameworks/opt/telephony/src/java/com/android/internal/telephony/ServiceStateTracker.java
+ADD	RILSigEvaluator.java_0f4ce652591a0441498a19a272828472	frameworks/opt/telephony/src/java/com/android/internal/telephony/RILSigEvaluator.java
+PATCH	InboundSmsHandler.java_2ba09879c6e2bbae270e31e7e73dff79.patch	frameworks/opt/telephony/src/java/com/android/internal/telephony/InboundSmsHandler.java
+PATCH	GsmCdmaCallTracker.java_1d45d95cdf0db2358de956e373ec9f19.patch	frameworks/opt/telephony/src/java/com/android/internal/telephony/GsmCdmaCallTracker.java
+ADD	RILDefender.java_250089e2004f92f995a2c22ec7fed754	frameworks/opt/telephony/src/java/com/android/internal/telephony/RILDefender.java
+PATCH	IccSmsInterfaceManager.java_edb7711b9500ac479a2651eca825bfbb.patch	frameworks/opt/telephony/src/java/com/android/internal/telephony/IccSmsInterfaceManager.java
+PATCH	CdmaSMSDispatcher.java_302b1f560c71332c062805c3544ce370.patch	frameworks/opt/telephony/src/java/com/android/internal/telephony/cdma/CdmaSMSDispatcher.java
+PATCH	CatService.java_8b2af55c6792c6cdd49e64ae91b38c36.patch	frameworks/opt/telephony/src/java/com/android/internal/telephony/cat/CatService.java
+PATCH	GsmInboundSmsHandler.java_8cadedf4c747207034fcc9d20fdd2839.patch	frameworks/opt/telephony/src/java/com/android/internal/telephony/gsm/GsmInboundSmsHandler.java
+PATCH	GsmSMSDispatcher.java_b85fe96bea73c5322ae74241dea8f803.patch	frameworks/opt/telephony/src/java/com/android/internal/telephony/gsm/GsmSMSDispatcher.java
+ADD	ProcessUtil.java_128b0e8735f62106f9a77dbd17a91913	frameworks/opt/telephony/src/java/com/android/internal/telephony/util/ProcessUtil.java
+PATCH	SmsMessage.java_4cc5078e2d7006112b4ab26f67566bd7.patch	frameworks/base/telephony/java/com/android/internal/telephony/gsm/SmsMessage.java

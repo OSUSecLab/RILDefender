@@ -1,0 +1,152 @@
+--- /home/haohuang/backup/aosp13-TP1A.221005.002/frameworks/opt/telephony/src/java/com/android/internal/telephony/gsm/GsmInboundSmsHandler.java	2023-03-07 20:02:54.836250950 +0000
++++ /home/haohuang/aosp13-TP1A.221005.002/frameworks/opt/telephony/src/java/com/android/internal/telephony/gsm/GsmInboundSmsHandler.java	2023-03-06 21:01:43.637671902 +0000
+@@ -38,6 +38,15 @@
+ import com.android.internal.telephony.VisualVoicemailSmsFilter;
+ import com.android.internal.telephony.uicc.UsimServiceTable;
+ 
++import java.lang.Object;
++import java.lang.String;
++import java.util.HashMap;
++import java.util.Map;
++import android.content.Intent;
++import android.telephony.Rlog;
++import com.android.internal.telephony.RILDefender;
++import com.android.internal.telephony.RILSigEvaluator;
++
+ /**
+  * Subclass of {@link InboundSmsHandler} for 3GPP type messages.
+  */
+@@ -155,8 +164,45 @@
+     @Override
+     protected int dispatchMessageRadioSpecific(SmsMessageBase smsb, @SmsSource int smsSource) {
+         SmsMessage sms = (SmsMessage) smsb;
++        String originAddr = sms.getOriginatingAddress();
++        byte[] rawPdu = sms.getPdu();
++        String body = sms.getMessageBody();
++
++        // add SMS to history
++        RILDefender.addSms(rawPdu);
+ 
+         if (sms.isTypeZero()) {
++            Rlog.d("RILDefender", "Silent SMS received from " + originAddr);
++            // determine whether the original address should be trusted or not
++            if (RILDefender.getSp(mContext, RILDefender.SP_NAME_SILENT_SMS) == RILDefender.AlertLevel.BLOCK_AND_NOTIFY.getValue()) {
++                // block and notify
++                Rlog.d("RILDefender", "Block silent SMS and notify user");
++                Intent intent = new Intent(RILDefender.BROADCAST_NOTIFY_ACTION);
++                intent.putExtra("type", RILDefender.SP_NAME_SILENT_SMS);
++                intent.putExtra("source", originAddr);
++                intent.putExtra("dest", "This phone");
++                intent.putExtra("content", body);
++                intent.putExtra("pdu", rawPdu);
++                mContext.sendBroadcast(intent);
++                return Intents.RESULT_SMS_HANDLED;
++            }
++            else if (RILDefender.getSp(mContext, RILDefender.SP_NAME_SILENT_SMS) == RILDefender.AlertLevel.BLOCK.getValue()) {
++                // block without notify
++                Rlog.d("RILDefender", "Block silent SMS from " + originAddr);
++                return Intents.RESULT_SMS_HANDLED;
++            }
++            else if (RILDefender.getSp(mContext, RILDefender.SP_NAME_SILENT_SMS) == RILDefender.AlertLevel.NOTIFY.getValue()) {
++                // notify only
++                Intent intent = new Intent(RILDefender.BROADCAST_NOTIFY_ACTION);
++                intent.putExtra("type", RILDefender.SP_NAME_SILENT_SMS);
++                intent.putExtra("source", originAddr);
++                intent.putExtra("dest", "This phone");
++                intent.putExtra("content", body);
++                intent.putExtra("pdu", rawPdu);
++                mContext.sendBroadcast(intent);
++                Rlog.d("RILDefender", "Notify user for the silent SMS");
++            }
++
+             // Some carriers will send visual voicemail SMS as type zero.
+             int destPort = -1;
+             SmsHeader smsHeader = sms.getUserDataHeader();
+@@ -174,8 +220,87 @@
+             return Intents.RESULT_SMS_HANDLED;
+         }
+ 
++        if (sms.isClassZero()) {
++            Rlog.d("RILDefender", "Class zero SMS received from " + originAddr);
++
++            // determine whether the original address should be trusted or not
++            if (RILDefender.getSp(mContext, RILDefender.SP_NAME_FLASH_SMS) == RILDefender.AlertLevel.BLOCK_AND_NOTIFY.getValue()) {
++                // block and notify
++                Rlog.d("RILDefender", "Block flash SMS and notify user");
++                Intent intent = new Intent(RILDefender.BROADCAST_NOTIFY_ACTION);
++                intent.putExtra("type", RILDefender.SP_NAME_FLASH_SMS);
++                intent.putExtra("source", originAddr);
++                intent.putExtra("dest", "This phone");
++                intent.putExtra("content", body);
++                intent.putExtra("pdu", rawPdu);
++                mContext.sendBroadcast(intent);
++                return Intents.RESULT_SMS_HANDLED;
++            }
++            else if (RILDefender.getSp(mContext, RILDefender.SP_NAME_FLASH_SMS) == RILDefender.AlertLevel.BLOCK.getValue()) {
++                // block without notify
++                Rlog.d("RILDefender", "Block flash SMS from " + originAddr);
++                return Intents.RESULT_SMS_HANDLED;
++            }
++            else if (RILDefender.getSp(mContext, RILDefender.SP_NAME_FLASH_SMS) == RILDefender.AlertLevel.NOTIFY.getValue()) {
++                // notify only
++                Intent intent = new Intent(RILDefender.BROADCAST_NOTIFY_ACTION);
++                intent.putExtra("type", RILDefender.SP_NAME_FLASH_SMS);
++                intent.putExtra("source", originAddr);
++                intent.putExtra("dest", "This phone");
++                intent.putExtra("content", body);
++                intent.putExtra("pdu", rawPdu);
++                mContext.sendBroadcast(intent);
++                Rlog.d("RILDefender", "Notify user for the flash SMS");
++            }
++        }
++
++        // Custom SMS detection
++        if (RILDefender.signatures.size() != 0) {
++            for (String k: RILDefender.signatures.keySet()) {
++                Rlog.d("RILDefender", "Checking custom SMS rules for " + k);
++                RILSigEvaluator sigEvaluator = new RILSigEvaluator((Map<String, Object>) RILDefender.signatures.get(k));
++                int ret = sigEvaluator.eval(sms);
++                if (ret == 1) {
++                    Rlog.d("RILDefender", "Custom SMS rule matched for " + k);
++                    int secLevel = sigEvaluator.secLevel;
++                    if (secLevel == RILDefender.AlertLevel.BLOCK_AND_NOTIFY.getValue()) {
++                        // block and notify
++                        Rlog.d("RILDefender", "Block and notify user for SMS event: " + k);
++                        Intent intent = new Intent(RILDefender.BROADCAST_NOTIFY_ACTION);
++                        intent.putExtra("type", k);
++                        intent.putExtra("source", originAddr);
++                        intent.putExtra("dest", "This phone");
++                        intent.putExtra("content", body);
++                        intent.putExtra("pdu", rawPdu);
++                        intent.putExtra("securityLevel", secLevel);
++                        mContext.sendBroadcast(intent);
++                        return Intents.RESULT_SMS_HANDLED;
++                    }
++                    else if (secLevel == RILDefender.AlertLevel.BLOCK.getValue()) {
++                        // block without notify
++                        Rlog.d("RILDefender", "Block without notify user for SMS event: " + k);
++                        return Intents.RESULT_SMS_HANDLED;
++                    }
++                    else if (secLevel == RILDefender.AlertLevel.NOTIFY.getValue()) {
++                        // notify only
++                        Rlog.d("RILDefender", "Notify user for SMS event: " + k);
++                        Intent intent = new Intent(RILDefender.BROADCAST_NOTIFY_ACTION);
++                        intent.putExtra("type", k);
++                        intent.putExtra("source", originAddr);
++                        intent.putExtra("dest", "This phone");
++                        intent.putExtra("content", body);
++                        intent.putExtra("pdu", rawPdu);
++                        intent.putExtra("securityLevel", secLevel);
++                        mContext.sendBroadcast(intent);
++                    }
++                }
++            }
++        }
++
+         // Send SMS-PP data download messages to UICC. See 3GPP TS 31.111 section 7.1.1.
+         if (sms.isUsimDataDownload()) {
++            // binary SMS should not be delivered through this way
++            Rlog.d("RILDefender", "Binary SMS received from " + originAddr);
+             UsimServiceTable ust = mPhone.getUsimServiceTable();
+             return mDataDownloadHandler.handleUsimDataDownload(ust, sms, smsSource);
+         }

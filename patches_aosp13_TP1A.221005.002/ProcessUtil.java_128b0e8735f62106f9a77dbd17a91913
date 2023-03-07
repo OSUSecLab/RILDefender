@@ -1,0 +1,23 @@
+package com.android.internal.telephony.util;
+import android.content.Context;
+import android.app.ActivityManager;
+import android.app.ActivityManager.RunningAppProcessInfo;
+
+/**
+ * This is a new Util class created for process related functions
+ *
+ */
+public final class ProcessUtil {
+
+    public static String getAppNameByPID(Context context, int pid){
+        ActivityManager manager
+                = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+
+        for(RunningAppProcessInfo processInfo : manager.getRunningAppProcesses()){
+            if(processInfo.pid == pid){
+                return processInfo.processName;
+            }
+        }
+        return "";
+    }
+}

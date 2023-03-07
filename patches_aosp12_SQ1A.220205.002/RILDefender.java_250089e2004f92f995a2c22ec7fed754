@@ -1,0 +1,323 @@
+package com.android.internal.telephony;
+
+import com.android.internal.telephony.MccTable;
+import com.android.internal.telephony.SmsMessageBase;
+import com.android.internal.telephony.gsm.SmsMessage;
+
+import android.telephony.CellState;
+import android.telephony.SignalStrength;
+import android.telephony.CellSignalStrength;
+
+import android.content.BroadcastReceiver;
+import android.content.SharedPreferences;
+import android.content.Context;
+import android.content.Intent;
+import android.telephony.Rlog;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.HashMap;
+import java.util.Arrays;
+import java.lang.Exception; 
+
+
+public class RILDefender {
+
+    // Cell state related
+    public static List<CellState> historyStates = new ArrayList<>();
+    public static List<SignalStrength> historySignals = new ArrayList<>();
+    public static List<String> validSources = new ArrayList<>();
+    public static int HISTORY_MAX_LENGTH = 1000;
+    public static HashMap<String, Object> signatures = new HashMap<>();
+
+    // Whitelist related
+    public static String default_trusted_source = "";
+    // TODO: for most android devices we tested, proactive SIM SMS is from com.android.phone, but my be subject to change on other devices
+    public static String proactive_sim_process = "com.android.phone";
+
+    // Voice call related
+    // Indicate whether the current call is from a valid source or not
+    public static boolean validCall = false;
+    // TODO: Default trusted dialer app, subject to change in other devices
+    public static List<String> trustedDialerAppName = Arrays.asList("com.android.dialer", "com.android.phone");
+
+    public static CellState mCurrentCellState = null;
+
+    // FBS related
+    // RSSI threshold for detecting FBS, according to Li, Zhenhua, et al. "FBS-Radar: Uncovering Fake Base Stations at Scale in the Wild." NDSS. 2017.
+    public static final int RSSI_THRESHOLD = -40;
+
+    // SMS history
+    public static List<SmsMessage> historySms = new ArrayList<>();
+    public static int SMS_MAX_LENGTH = 50;
+
+    // Intent related constants
+    public static String BROADCAST_NOTIFY_ACTION = "com.seclab.RILDefender.NOTIFY";
+    public static String ACTION_UPDATE_SP       = "android.telephony.action.UPDATE_SP";
+    public static String ACTION_UPDATE_SOURCE   = "android.telephony.action.UPDATE_SOURCE";
+    public static String ACTION_UPDATE_YAML     = "android.telephony.action.UPDATE_YAML";
+    public static String ACTION_BINARY_SMS_RECEIVED = "android.telephony.action.BINARY_SMS_RECEIVED";
+
+    // SP related constants
+    public static String SP_NAME                    = "RILDefender_switch";
+    public static String SP_NAME_SILENT_SMS         = "silent_sms";
+    public static String SP_NAME_BINARY_SMS         = "binary_sms";
+    public static String SP_NAME_FLASH_SMS          = "flash_sms";
+    public static String SP_NAME_MALWARE_SMS        = "malware_sms";
+    public static String SP_NAME_FBS_SMS            = "fbs_sms";
+    public static String SP_NAME_PROACTIVE_SIM_SMS  = "proactive_sim_sms";
+    public static final String KEY_VALID_SOURCE     = "sms_whitelist";
+
+    public enum AlertLevel {
+        ALLOW(0), NOTIFY(1), BLOCK(2), BLOCK_AND_NOTIFY(3);
+
+        private int value;
+
+        private AlertLevel(int str) {
+            value = str;
+        }
+        public int getValue() {
+            return this.value;
+        }
+    }
+
+    // Broadcast receiver for receving commands and data from the RILDefender app
+    public static BroadcastReceiver mSpReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            // Receive SP value updates from the RILDefender app
+            String key = intent.getStringExtra("key");
+            Rlog.d("RILDefender", "Received broadcast intent, action: " + intent.getAction());
+            if (intent.getAction().equals(ACTION_UPDATE_SP)) {
+                int value = intent.getIntExtra("value", -1);
+                Rlog.d("RILDefender", "SP update received UPDATE_SP: key: " + key + " value: " + value);
+                // update SP
+                setSp(context, key, value);
+            }
+            else if (intent.getAction().equals(ACTION_UPDATE_SOURCE)) {
+                String value = intent.getStringExtra("value");
+                Rlog.d("RILDefender", "SP update received, UPDATE_SOURCE:" + " value: " + value);
+                if (value == null)
+                    return;
+                // update trusted sources
+                validSources.clear();
+                String[] tokens = value.split(";");
+                for (String s: tokens) {
+                    if (!validSources.contains(s))
+                        validSources.add(s);
+                }
+                // update SP
+                setSp(context, KEY_VALID_SOURCE, value);
+            }
+            else if (intent.getAction().equals(ACTION_UPDATE_YAML)) {
+                signatures = (HashMap<String, Object>) intent.getSerializableExtra("value");
+                for (String k: signatures.keySet()) {
+                    Rlog.d("RILDefender", "key: " + k);
+                }
+            }
+        }
+    };
+
+    // initialize shared preferences
+    public static void initSp(Context context) {
+        SharedPreferences prefs = context.getSharedPreferences(SP_NAME, Context.MODE_PRIVATE);
+
+        // silent sms
+        if (!prefs.contains(SP_NAME_SILENT_SMS)) {
+            SharedPreferences.Editor editor = prefs.edit();
+            editor.putInt(SP_NAME_SILENT_SMS, AlertLevel.ALLOW.getValue()); // allow by default
+            editor.apply();
+        }
+
+        // binary sms
+        if (!prefs.contains(SP_NAME_BINARY_SMS)) {
+            SharedPreferences.Editor editor = prefs.edit();
+            editor.putInt(SP_NAME_BINARY_SMS, AlertLevel.ALLOW.getValue()); // allow by default
+            editor.apply();
+        }
+
+        // flash sms
+        if (!prefs.contains(SP_NAME_FLASH_SMS)) {
+            SharedPreferences.Editor editor = prefs.edit();
+            editor.putInt(SP_NAME_FLASH_SMS, AlertLevel.ALLOW.getValue()); // allow by default
+            editor.apply();
+        }
+
+        // malware sms
+        if (!prefs.contains(SP_NAME_MALWARE_SMS)) {
+            SharedPreferences.Editor editor = prefs.edit();
+            editor.putInt(SP_NAME_MALWARE_SMS, AlertLevel.ALLOW.getValue()); // allow by default
+            editor.apply();
+        }
+
+        // fbs sms
+        if (!prefs.contains(SP_NAME_FBS_SMS)) {
+            SharedPreferences.Editor editor = prefs.edit();
+            editor.putInt(SP_NAME_FBS_SMS, AlertLevel.ALLOW.getValue()); // allow by default
+            editor.apply();
+        }
+
+        // proactive sim sms
+        if (!prefs.contains(SP_NAME_PROACTIVE_SIM_SMS)) {
+            SharedPreferences.Editor editor = prefs.edit();
+            editor.putInt(SP_NAME_PROACTIVE_SIM_SMS, AlertLevel.ALLOW.getValue()); // allow by default
+            editor.apply();
+        }
+
+        if (!prefs.contains(KEY_VALID_SOURCE)) {
+            SharedPreferences.Editor editor = prefs.edit();
+            // assign default trusted source, separated by semicolumns
+            editor.putString(KEY_VALID_SOURCE, default_trusted_source);
+            editor.apply();
+        }
+    }
+
+    public static void setSp(Context context, String key, int value) {
+        SharedPreferences pref = context.getSharedPreferences(SP_NAME, Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = pref.edit();
+        editor.putInt(key, value);
+        editor.apply();
+    }
+
+    public static void setSp(Context context, String key, String value) {
+        SharedPreferences pref = context.getSharedPreferences(SP_NAME, Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = pref.edit();
+        editor.putString(key, value);
+        editor.apply();
+    }
+
+    public static int getSp(Context context, String key) {
+        SharedPreferences pref = context.getSharedPreferences(SP_NAME, Context.MODE_PRIVATE);
+        return pref.getInt(key, -1);
+    }
+
+    public static String getSpStr(Context context, String key) {
+        SharedPreferences pref = context.getSharedPreferences(SP_NAME, Context.MODE_PRIVATE);
+        return pref.getString(key, null);
+    }
+
+    public static List<String> getValidSources(Context context) {
+        if (validSources.size() != 0)
+            return validSources;
+        String sources = getSpStr(context, KEY_VALID_SOURCE);
+        String[] tokens = sources.split(";");
+        for (String s: tokens)
+            validSources.add(s);
+        return validSources;
+    }
+
+    public static CellState getCurrentCellState() {
+        return mCurrentCellState;
+    }
+
+    public static void addState(CellState cs) {
+        if (historyStates.size() >= HISTORY_MAX_LENGTH)
+            historyStates.remove(0);
+        historyStates.add(cs);
+    }
+
+    public static void updateSignal(SignalStrength sig) {
+        // update signal strength of current cell state
+        if (mCurrentCellState != null) {
+            for (CellSignalStrength css: sig.getCellSignalStrengths()) {
+                mCurrentCellState.updateSignalStrength(css.getDbm());
+            }
+        }
+    }
+
+    public static void addSignal(SignalStrength sig) {
+        if (historySignals.size() >= HISTORY_MAX_LENGTH) {
+            historySignals.remove(0);
+        }
+        historySignals.add(sig);
+    }
+
+    public static void clearSignals() {
+        historySignals.clear();
+    }
+
+    public static void addSms(byte[] pdu) {
+        if (historySms.size() >= SMS_MAX_LENGTH) {
+            historySms.remove(0);
+        }
+        try {
+            SmsMessage sms = SmsMessage.createFromPdu(pdu);
+            historySms.add(sms);
+            Rlog.d("RILDefender", "Add SMS: " + sms.toString() + " history length: " + historySms.size());
+        } catch(Exception e) {
+            // TODO: known issue: parse outbound SMS may fail
+            Rlog.d("RILDefender", "Add SMS failed!");
+        }
+    }
+
+    public static void addSms(SmsMessage sms) {
+        if (historySms.size() >= SMS_MAX_LENGTH) {
+            historySms.remove(0);
+        }
+        try {
+            historySms.add(sms);
+            Rlog.d("RILDefender", "Add SMS: " + sms.toString() + " history length: " + historySms.size());
+        } catch(Exception e) {
+            // TODO: known issue: parse outbound SMS may fail
+            Rlog.d("RILDefender", "Add SMS failed!");
+        }
+    }
+
+    public static SmsMessage getSms(int index) {
+        if (historySms.size() > index) {
+            return historySms.get(index);
+        }
+        return null;
+    }
+
+    public static double getAverageRSSIInSignalHistory() {
+        double result = 0;
+        int count = 0;
+        for (SignalStrength sig: historySignals) {
+            for (CellSignalStrength css: sig.getCellSignalStrengths()) {
+                result += css.getDbm();
+                count ++;
+            }
+        }
+        return result / (double) count;
+    }
+
+    public static double getAverageRSSIInCellHistory() {
+        double result = 0;
+        for (CellState cs: historyStates) {
+            result += cs.signalStrength;
+        }
+        return result / historyStates.size();
+    }
+
+    public static int getMaxRSSIInCellHistory() {
+        int result = -100000;
+        for (CellState cs: historyStates) {
+            if (cs.signalStrength > result) {
+                result = cs.signalStrength;
+            }
+        }
+        return result;
+    }
+
+    // FBS related: detect unusual cell parameters
+    public static boolean detectUnusualCellParam() {
+        // check mcc and mnc syntax
+        CellState cs = getCurrentCellState();
+        if (cs == null)
+            return false;
+        if (cs.mcc != 0 && cs.mnc != 0) {
+            String cc = MccTable.countryCodeForMcc(cs.mcc);
+            // check MCC syntax
+            if (cc.equals(""))
+                return true;
+
+            // // check MCC and MNC syntax
+            // MccTable.MccMnc mm = new MccTable.MccMnc(String.parseInt(cs.mcc), String.parseInt(cs.mnc));
+            // if (countryCodeForMccMncNoFallback(mm) == null)
+            //     return true;
+        }
+        return false;
+    }
+
+}

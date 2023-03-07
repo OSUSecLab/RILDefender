@@ -1,0 +1,120 @@
+--- /home/haohuang/backup/aosp11-RQ3A.211001.001/frameworks/opt/telephony/src/java/com/android/internal/telephony/cat/CatService.java	2023-03-05 03:52:02.762060275 +0000
++++ /home/haohuang/aosp11-RQ3A.211001.001/frameworks/opt/telephony/src/java/com/android/internal/telephony/cat/CatService.java	2023-03-05 21:13:11.806143789 +0000
+@@ -28,12 +28,15 @@
+ import android.content.pm.PackageManager;
+ import android.content.pm.ResolveInfo;
+ import android.content.res.Resources.NotFoundException;
++import android.content.BroadcastReceiver;
++import android.content.IntentFilter;
+ import android.os.AsyncResult;
+ import android.os.Handler;
+ import android.os.LocaleList;
+ import android.os.Message;
+ import android.os.RemoteException;
+ import android.telephony.TelephonyManager;
++import android.telephony.Rlog;
+ 
+ import com.android.internal.telephony.CommandsInterface;
+ import com.android.internal.telephony.PhoneConstants;
+@@ -47,6 +50,7 @@
+ import com.android.internal.telephony.uicc.UiccCardApplication;
+ import com.android.internal.telephony.uicc.UiccController;
+ import com.android.internal.telephony.uicc.UiccProfile;
++import com.android.internal.telephony.RILDefender;
+ 
+ import java.io.ByteArrayOutputStream;
+ import java.util.List;
+@@ -85,6 +89,45 @@
+     private static IccRecords mIccRecords;
+     private static UiccCardApplication mUiccApplication;
+ 
++    // RILDefender: broadcast receiver events from baseband monitor
++    private BroadcastReceiver mBinarySmsReceiver = new BroadcastReceiver() {
++        @Override
++        public void onReceive(Context context, Intent intent) {
++            if (intent.getAction().equals(RILDefender.ACTION_BINARY_SMS_RECEIVED)) {
++                Rlog.d("RILDefender", "Binary SMS received from baseband monitor");
++                String hexData = intent.getStringExtra("data");
++                String source = intent.getStringExtra("source");
++                // notify user
++                int blockSwitch = RILDefender.getSp(mContext, RILDefender.SP_NAME_BINARY_SMS);
++                if (blockSwitch == RILDefender.AlertLevel.BLOCK_AND_NOTIFY.getValue()) {
++                    // block and notify
++                    Rlog.d("RILDefender", "Block binary SMS and notify user");
++                    Intent newIntent = new Intent(RILDefender.BROADCAST_NOTIFY_ACTION);
++                    newIntent.putExtra("type", RILDefender.SP_NAME_BINARY_SMS);
++                    newIntent.putExtra("source", source);
++                    newIntent.putExtra("content", hexData);
++                    context.sendBroadcast(newIntent);
++                }
++                else if (blockSwitch == RILDefender.AlertLevel.BLOCK.getValue()) {
++                    // block without notify
++                    Rlog.d("RILDefender", "Block binary SMS " + hexData);
++                    return;
++                }
++                else if (blockSwitch == RILDefender.AlertLevel.NOTIFY.getValue()) {
++                    // notify only
++                    Rlog.d("RILDefender", "Notify user for the binary SMS");
++                    Intent newIntent = new Intent(RILDefender.BROADCAST_NOTIFY_ACTION);
++                    newIntent.putExtra("type", RILDefender.SP_NAME_BINARY_SMS);
++                    newIntent.putExtra("source", source);
++                    newIntent.putExtra("content", hexData);
++                    context.sendBroadcast(newIntent);
++                }
++
++            }
++        }
++    };
++
++
+     // Service members.
+     // Protects singleton instance lazy initialization.
+     @UnsupportedAppUsage
+@@ -152,6 +195,11 @@
+         mContext = context;
+         mSlotId = slotId;
+ 
++        // RILDefender: register broadcast receiver for binary sms event
++        IntentFilter newFilter = new IntentFilter();
++        newFilter.addAction(RILDefender.ACTION_BINARY_SMS_RECEIVED);
++        context.registerReceiver(mBinarySmsReceiver, newFilter);
++
+         // Get the RilMessagesDecoder for decoding the messages.
+         mMsgDecoder = RilMessageDecoder.getInstance(this, fh, context, slotId);
+         if (null == mMsgDecoder) {
+@@ -537,6 +585,35 @@
+ 
+ 
+     private void broadcastCatCmdIntent(CatCmdMessage cmdMsg) {
++        int blockSwitch = RILDefender.getSp(mContext, RILDefender.SP_NAME_BINARY_SMS);
++        AppInterface.CommandType type = cmdMsg.getCmdType();
++        if (blockSwitch == RILDefender.AlertLevel.BLOCK_AND_NOTIFY.getValue()) {
++            // block and notify
++            Rlog.d("RILDefender", "Block binary SMS and notify user");
++            Intent intent = new Intent(RILDefender.BROADCAST_NOTIFY_ACTION);
++            intent.putExtra("type", RILDefender.SP_NAME_BINARY_SMS);
++            // TODO: tracking source of a binary SMS initiator
++            intent.putExtra("source", "");
++            intent.putExtra("content", cmdMsg.toString());
++            mContext.sendBroadcast(intent);
++            return;
++        }
++        else if (blockSwitch == RILDefender.AlertLevel.BLOCK.getValue()) {
++            // block without notify
++            Rlog.d("RILDefender", "Block binary SMS " + type);
++        }
++        else if (blockSwitch == RILDefender.AlertLevel.NOTIFY.getValue()) {
++            // notify only
++            Rlog.d("RILDefender", "Notify user for the binary SMS");
++            Intent intent = new Intent(RILDefender.BROADCAST_NOTIFY_ACTION);
++            intent.putExtra("type", RILDefender.SP_NAME_BINARY_SMS);
++            intent.putExtra("source", "");
++            intent.putExtra("content", cmdMsg.toString());
++            mContext.sendBroadcast(intent);
++        }
++
++        // not blocking STK command, proceed as usual
++
+         Intent intent = new Intent(AppInterface.CAT_CMD_ACTION);
+         intent.putExtra( "STK CMD", cmdMsg);
+         intent.putExtra("SLOT_ID", mSlotId);

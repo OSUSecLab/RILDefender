@@ -1,0 +1,19 @@
+--- /home/haohuang/backup/aosp13-TP1A.221005.002/frameworks/opt/telephony/src/java/com/android/internal/telephony/SignalStrengthController.java	2023-03-07 20:11:27.417497834 +0000
++++ /home/haohuang/aosp13-TP1A.221005.002/frameworks/opt/telephony/src/java/com/android/internal/telephony/SignalStrengthController.java	2023-03-06 21:11:02.671178764 +0000
+@@ -318,7 +318,10 @@
+ 
+             if (mPhone.getServiceStateTracker() != null) {
+                 mSignalStrength.updateLevel(mCarrierConfig, mPhone.getServiceStateTracker().mSS);
+-            }
++            
++	        // RILDefender add signal strength to history
++                RILDefender.addSignal(mSignalStrength);
++	    }
+         } else {
+             log("onSignalStrengthResult() Exception from RIL : " + ar.exception);
+             mSignalStrength = new SignalStrength();
+@@ -1113,4 +1116,3 @@
+         mLocalLog.log(TAG + ": " + msg);
+     }
+ }
+-

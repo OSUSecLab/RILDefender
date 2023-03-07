@@ -1,0 +1,219 @@
+package android.telephony;
+
+import android.telephony.ServiceState;
+import android.telephony.CellIdentity;
+import android.telephony.CellIdentityCdma;
+import android.telephony.CellIdentityGsm;
+import android.telephony.CellIdentityLte;
+import android.telephony.CellIdentityTdscdma;
+import android.telephony.CellIdentityWcdma;
+import android.telephony.CellIdentityNr;
+import android.telephony.CellLocation;
+import android.annotation.Nullable;
+
+import java.util.ArrayList;
+import java.util.List;
+
+
+public class CellState {
+
+    public String radioTechnology;
+
+    // cell info
+    public int arfcn;
+    public int bsic;
+    public int cid;
+    public int lac;
+    public int mcc;
+    public String mccString;
+    public int mnc;
+    public String mncString;
+    public int tac;
+    public int[] cellBandwidths;
+    public int channelNumber;
+    public int rat;
+
+    // signal
+    public int signalStrength = 0; // RSSI, in average
+    public int totalSignals = 0;
+    public int signalLevel; // abstract level of signal strength
+    public List<Integer> signals = new ArrayList<>();
+    public int MAX_SIGNAL_LENGTH = 20;
+
+    // operator info
+    public String operatorAlphaLong;
+    public String operatorAlphaShort;
+    public String operatorNumeric;
+
+    public CellState() {
+
+    }
+
+    public void initFromCellIdentity(CellIdentity cellIdentity) {
+        if (cellIdentity == null)
+            return;
+        rat = cellIdentity.getType();
+        switch(cellIdentity.getType()) {
+            case CellInfo.TYPE_GSM:
+                radioTechnology = "GSM";
+                CellIdentityGsm gsm = ((CellIdentityGsm) cellIdentity);
+                cid = gsm.getCid();
+                lac = gsm.getLac();
+                arfcn = gsm.getArfcn();
+                bsic = gsm.getBsic();
+                mcc = gsm.getMcc();
+                mnc = gsm.getMnc();
+                mccString = gsm.getMccString();
+                mncString = gsm.getMncString();
+                operatorAlphaLong = (String) gsm.getOperatorAlphaLong();
+                operatorAlphaShort = (String) gsm.getOperatorAlphaShort();
+                operatorNumeric = gsm.getMobileNetworkOperator();
+                break;
+            case CellInfo.TYPE_WCDMA:
+                radioTechnology = "WCDMA";
+                CellIdentityWcdma wcdma = ((CellIdentityWcdma) cellIdentity);
+                cid = wcdma.getCid();
+                lac = wcdma.getLac();
+                arfcn = wcdma.getUarfcn();
+                mcc = wcdma.getMcc();
+                mnc = wcdma.getMnc();
+                mccString = wcdma.getMccString();
+                mncString = wcdma.getMncString();
+                operatorAlphaLong = (String) wcdma.getOperatorAlphaLong();
+                operatorAlphaShort = (String) wcdma.getOperatorAlphaShort();
+                operatorNumeric = wcdma.getMobileNetworkOperator();
+                break;
+            case CellInfo.TYPE_TDSCDMA:
+                radioTechnology = "TDSCDMA";
+                CellIdentityTdscdma tdscdma = ((CellIdentityTdscdma) cellIdentity);
+                cid = tdscdma.getCid();
+                lac = tdscdma.getLac();
+                mccString = tdscdma.getMccString();
+                mncString = tdscdma.getMncString();
+                arfcn = tdscdma.getUarfcn();
+                operatorAlphaLong = (String) tdscdma.getOperatorAlphaLong();
+                operatorAlphaShort = (String) tdscdma.getOperatorAlphaShort();
+                operatorNumeric = tdscdma.getMobileNetworkOperator();
+                break;
+            case CellInfo.TYPE_LTE:
+                radioTechnology = "LTE";
+                CellIdentityLte lte = ((CellIdentityLte) cellIdentity);
+                cid = lte.getCi();
+                lac = lte.getTac();
+                arfcn = lte.getEarfcn();
+                mcc = lte.getMcc();
+                mnc = lte.getMnc();
+                mccString = lte.getMccString();
+                mncString = lte.getMncString();
+                tac = lte.getTac();
+                operatorAlphaLong = (String) lte.getOperatorAlphaLong();
+                operatorAlphaShort = (String) lte.getOperatorAlphaShort();
+                operatorNumeric = lte.getMobileNetworkOperator();
+                break;
+            case CellInfo.TYPE_NR:
+                radioTechnology = "NR";
+                CellIdentityNr nr = ((CellIdentityNr) cellIdentity);
+                cid = (int) nr.getNci();
+                lac = nr.getTac();
+                arfcn = nr.getNrarfcn();
+                tac = nr.getTac();
+                mccString = nr.getMccString();
+                mncString = nr.getMncString();
+                operatorAlphaLong = (String) nr.getOperatorAlphaLong();
+                operatorAlphaShort = (String) nr.getOperatorAlphaShort();
+                operatorNumeric = "";
+                break;
+            default:
+                break;
+        }
+    }
+
+    public void updateSignalStrength(int newSig) {
+        // calculate new signal average (RSSI)
+        if (newSig >= 0) {
+            // filter wrong signals
+            return;
+        }
+        if (signals.size() > MAX_SIGNAL_LENGTH) 
+            signals.remove(0);
+        signals.add(newSig);
+        signalStrength = (signalStrength * totalSignals + newSig) / (totalSignals + 1);
+        totalSignals += 1;
+    }
+
+    // TODO: android will sometimes scan incomplete info, but this may vary of different devices
+    public boolean isValid() {
+        if (cid > 65535 || lac > 65535 || mcc > 65535 || mnc > 65535)
+            return false;
+        if (mcc == 0 && mnc == 0)
+            return false;
+        return true;
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        if (other == null) {
+            return false;
+        }
+
+        if (other instanceof CellState) {
+            CellState ocs = (CellState) other;
+            if (ocs.cid != this.cid)
+                return false;
+            else if (ocs.lac != this.lac)
+                return false;
+            else if (ocs.arfcn != this.arfcn)
+                return false;
+            else if (ocs.mcc != this.mcc)
+                return false;
+            else if (ocs.mnc != this.mnc)
+                return false;
+        }
+        else {
+            return false;
+        }
+
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return new StringBuilder().append("\n=========Begin CellState=========\n")
+                .append(radioTechnology)
+                .append("\ncid=" + cid)
+                .append("\nlac=" + lac)
+                .append("\narfcn=" + arfcn)
+                .append("\nmcc=" + mcc)
+                .append("\nmnc=" + mnc)
+                .append("\naverageRSSI=" + signalStrength)
+                .append("\noperatorAlphaLong=" + operatorAlphaLong)
+                .append("\noperatorAlphaShort=" + operatorAlphaShort)
+                .append("\noperatorNumeric=" + operatorNumeric)
+                .append("\n=========End CellState=========")
+                .toString();
+    }
+
+    public int getArfcn() {return arfcn;}
+
+    public int getCid() {return cid;}
+
+    public int getLac() {return lac;}
+
+    public int getMcc() {return mcc;}
+
+    public int getMnc() {return mnc;}
+
+    public int getSignalStrength() {return signalStrength;}
+
+    public void setOperatorAlphaLong(@Nullable String s) {operatorAlphaLong = s;}
+
+    public @Nullable String getOperatorAlphaLong() {return operatorAlphaLong;}
+
+    public void setOperatorAlphaShort(@Nullable String s) {operatorAlphaShort = s;}
+
+    public @Nullable String getOperatorAlphaShort() {return operatorAlphaShort;}
+
+    public void setOperatorNumeric(@Nullable String s) {operatorNumeric = s;}
+
+    public @Nullable String getOperatorNumeric() {return operatorNumeric;}
+}

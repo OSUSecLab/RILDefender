@@ -1,0 +1,228 @@
+package com.android.internal.telephony;
+
+import android.content.Context;
+import android.content.Intent;
+import android.telephony.Rlog;
+
+import com.android.internal.telephony.SmsMessageBase;
+import com.android.internal.telephony.gsm.SmsMessage;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+public class RILSigEvaluator {
+
+    Map<String, Object> exp;
+    public final String TAG = "RILSigEvaluator";
+    public SmsMessage sms;
+    public int secLevel;
+
+    public RILSigEvaluator(Map<String, Object> e) {
+        exp = e;
+    }
+
+    public int eval(SmsMessage s) {
+        this.sms = s;
+        return evaluate(exp);
+    }
+
+    private int evaluate(Map<String, Object> e) {
+        if (!e.containsKey("condition") || !e.containsKey("lvalue") || !e.containsKey("rvalue")) {
+            Rlog.d(TAG, "Invalid expression!");
+            return -1;
+        }
+        if (e.containsKey("securityLevel"))
+            secLevel = (int) e.get("securityLevel");
+        else
+            secLevel = RILDefender.AlertLevel.NOTIFY.getValue(); // default sec level: notify only
+
+        String condition = (String) e.get("condition");
+        int rvalue = evalValue(e.get("rvalue"));
+        ArrayList<Object> lvalues = (ArrayList<Object>) e.get("lvalue");
+        List<String> opcode = new ArrayList<>();
+        if (lvalues.size() > 1)
+            opcode = (ArrayList<String>) e.get("opcode");
+        List<Integer> lvs = new ArrayList<>();
+        for (Object lv: lvalues) {
+            int val = evalValue(lv);
+            lvs.add(val);
+        }
+
+        boolean result = compute(lvs, opcode, condition, rvalue);
+        return result ? 1 : 0;
+    }
+
+    private int evalValue(Object o) {
+        if (o instanceof String) {
+            switch ((String) o) {
+                // SMS Fields
+                case "sms.pid":
+                    return this.sms.getProtocolIdentifier();
+                case "sms.dcs":
+                    return this.sms.getDataCodingScheme();
+                case "sms.mti":
+                    return this.sms.getMessageClass().ordinal();
+                case "sms.oa":
+                    return Integer.parseInt(this.sms.getOriginatingAddress());
+                case "sms.smsc":
+                    return Integer.parseInt(this.sms.getServiceCenterAddress());
+                case "sms.udl":
+                    return this.sms.getUserData().length;
+                case "sms.scts":
+                    return (int) this.sms.getTimestampMillis();
+                // SMS Context
+                case "bs.ss":
+                    return (int) RILDefender.getCurrentCellState().signalStrength;
+                case "bs.mcc":
+                    if (RILDefender.getCurrentCellState() != null)
+                        return RILDefender.getCurrentCellState().mcc;
+                    else
+                        return 0;
+                case "bs.mnc":
+                    if (RILDefender.getCurrentCellState() != null)
+                        return RILDefender.getCurrentCellState().mnc;
+                    else
+                        return 0;
+                case "bs.cid":
+                    if (RILDefender.getCurrentCellState() != null)
+                        return RILDefender.getCurrentCellState().cid;
+                    else
+                        return 0;
+                case "bs.lac":
+                    if (RILDefender.getCurrentCellState() != null)
+                        return RILDefender.getCurrentCellState().lac;
+                    else
+                        return 0;
+                case "bs.arfcn":
+                    if (RILDefender.getCurrentCellState() != null)
+                        return RILDefender.getCurrentCellState().arfcn;
+                    else
+                        return 0;
+                case "bs.rat":
+                    if (RILDefender.getCurrentCellState() != null)
+                        return RILDefender.getCurrentCellState().rat;
+                    else
+                        return 0;
+                // Constants
+                case "SEND_SMS":
+                    return 0x13;
+                case "RUN_AT_CMD":
+                    return 0x34;
+                case "eventCount":
+                    return RILDefender.historySms.size();
+                default:
+                    // SMS Events
+                    if (((String) o).startsWith("sms") && ((String) o).contains(".")) {
+                        String[] tokens = ((String) o).split(".");
+                        if (tokens.length != 2)
+                            break;
+                        // extract SMS index in history
+                        int index = Integer.valueOf(tokens[0].replace("sms", ""));
+                        String attribute = tokens[1].trim();
+                        SmsMessage s = RILDefender.getSms(index);
+                        if (sms == null)
+                            break;
+                        
+                        // evaluate attributes of specific SMS event:
+                        switch (attribute) {
+                            case "pid":
+                                return s.getProtocolIdentifier();
+                            case "dcs":
+                                return s.getDataCodingScheme();
+                            case "mti":
+                                return s.getMessageClass().ordinal();
+                            case "oa":
+                                return Integer.parseInt(s.getOriginatingAddress());
+                            case "smsc":
+                                return Integer.parseInt(s.getServiceCenterAddress());
+                            case "udl":
+                                return s.getUserData().length;
+                            case "scts":
+                                return (int) s.getTimestampMillis();
+                            default:
+                                break;
+                        }
+                    }
+
+                    Rlog.d(TAG, "Warning: unimplemented value query for: " + (String) o);
+                    return 0;
+            }
+        }
+        else if (o instanceof Integer) {
+            return (int) o;
+        }
+        else if (o instanceof HashMap) {
+            // recursively evaluate
+            return evaluate((Map<String, Object>) o);
+        }
+        else {
+        }
+        return 0;
+    }
+
+    private boolean compute(List<Integer> lvs, List<String> opcode, String condition, int rv) {
+        if (!(opcode.size() == lvs.size() - 1)) {
+            Rlog.d(TAG, "Invalid computation");
+        }
+        int res = lvs.get(0);
+        for (int i=0; i<opcode.size(); ++i) {
+            int lv = lvs.get(i+1);
+            switch (opcode.get(i)) {
+                case "+":
+                    res = res + lv;
+                    break;
+                case "-":
+                    res = res - lv;
+                    break;
+                case "*":
+                    res = res * lv;
+                    break;
+                case "/":
+                    res = res / lv;
+                    break;
+                case "&":
+                    res = res & lv;
+                    break;
+                case "|":
+                    res = res | lv;
+                    break;
+                case "&&":
+                    if (res != 0 && lv != 0)
+                        res = 1;
+                    else
+                        res = 0;
+                    break;
+                case "||":
+                    if (res != 0 || lv != 0)
+                        res = 1;
+                    else
+                        res = 0;
+                    break;
+                default:
+                    Rlog.d(TAG, "Warning: unimplemented opcode: " + opcode.get(i));
+            }
+        }
+
+        switch (condition) {
+            case "==":
+                return res == rv;
+            case "!=":
+                return res != rv;
+            case ">":
+                return res > rv;
+            case "<":
+                return res < rv;
+            case ">=":
+                return res >= rv;
+            case "<=":
+                return res <= rv;
+            default:
+                Rlog.d(TAG, "Warning: unimplemented condition code: " + condition);
+        }
+
+        return res == rv;
+    }
+
+}

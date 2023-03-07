@@ -1,0 +1,71 @@
+--- /home/haohuang/backup/aosp13-TP1A.221005.002/frameworks/opt/telephony/src/java/com/android/internal/telephony/InboundSmsHandler.java	2023-03-07 20:10:48.365097803 +0000
++++ /home/haohuang/aosp13-TP1A.221005.002/frameworks/opt/telephony/src/java/com/android/internal/telephony/InboundSmsHandler.java	2023-03-06 21:01:43.613671661 +0000
+@@ -69,6 +69,9 @@
+ import android.telephony.TelephonyManager;
+ import android.util.LocalLog;
+ import android.util.Pair;
++import com.android.internal.telephony.RILDefender;
++import com.android.internal.telephony.MccTable;
++import android.telephony.CellState;
+ 
+ import com.android.internal.R;
+ import com.android.internal.annotations.VisibleForTesting;
+@@ -832,6 +835,53 @@
+         SmsHeader smsHeader = sms.getUserDataHeader();
+         InboundSmsTracker tracker;
+ 
++        // RILDefender: handle normal SMS text messages
++        // Detected FBS SMS
++        // double averageRSSI = RILDefender.getAverageRSSIInSignalHistory();
++        CellState cs = RILDefender.getCurrentCellState();
++        boolean suspecious = false;
++
++        if (cs.getSignalStrength() < 0 && cs.getSignalStrength() > RILDefender.RSSI_THRESHOLD)
++            // check if average RSSI is over a threshold
++            suspecious = true;
++        else {
++            // check if any abnormal broadcast parameters
++            if (RILDefender.detectUnusualCellParam())
++                suspecious = true;
++        }
++
++        // add SMS to history
++        RILDefender.addSms(sms.getPdu());
++        
++        if (suspecious) {
++            Rlog.d("RILDefender", "Suspecious cell state: " + cs);
++            if (RILDefender.getSp(mContext, RILDefender.SP_NAME_FBS_SMS) == RILDefender.AlertLevel.BLOCK_AND_NOTIFY.getValue()) {
++                // block and notify
++                Rlog.d("RILDefender", "Block FBS SMS and notify user");
++                Intent intent = new Intent(RILDefender.BROADCAST_NOTIFY_ACTION);
++                intent.putExtra("type", RILDefender.SP_NAME_FBS_SMS);
++                intent.putExtra("source", sms.getOriginatingAddress());
++                intent.putExtra("content", sms.getMessageBody());
++                intent.putExtra("pdu", sms.getPdu());
++                mContext.sendBroadcast(intent);
++                return 0;
++            } else if (RILDefender.getSp(mContext, RILDefender.SP_NAME_FBS_SMS) == RILDefender.AlertLevel.BLOCK.getValue()) {
++                // block without notify
++                Rlog.d("RILDefender", "Block FBS SMS from " + sms.getOriginatingAddress());
++                return 0;
++            } else if (RILDefender.getSp(mContext, RILDefender.SP_NAME_FBS_SMS) == RILDefender.AlertLevel.NOTIFY.getValue()) {
++                // notify only
++                Intent intent = new Intent(RILDefender.BROADCAST_NOTIFY_ACTION);
++                intent.putExtra("type", RILDefender.SP_NAME_FBS_SMS);
++                intent.putExtra("source", sms.getOriginatingAddress());
++                intent.putExtra("content", sms.getMessageBody());
++                intent.putExtra("pdu", sms.getPdu());
++                mContext.sendBroadcast(intent);
++                Rlog.d("RILDefender", "Notify user for the FBS SMS");
++            }
++        }
++
++
+         if ((smsHeader == null) || (smsHeader.concatRef == null)) {
+             // Message is not concatenated.
+             int destPort = -1;
+@@ -2167,4 +2217,3 @@
+                 List<SmsFilter> remainingFilters);
+     }
+ }
+-

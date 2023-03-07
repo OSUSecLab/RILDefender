@@ -1,0 +1,15 @@
+ADD	CellState.java_14349550551512b900d4fee5b73cf95e	frameworks/opt/telephony/src/java/com/android/internal/telephony/CellState.java
+PATCH	GsmCdmaPhone.java_098a979c9becf810cc7005796838c4a2.patch	frameworks/opt/telephony/src/java/com/android/internal/telephony/GsmCdmaPhone.java
+PATCH	SignalStrengthController.java_a8f2767ed50b3d36ac8cd185407846ee.patch	frameworks/opt/telephony/src/java/com/android/internal/telephony/SignalStrengthController.java
+PATCH	ServiceStateTracker.java_a4576dc529d3ac175b6bb427d05ed276.patch	frameworks/opt/telephony/src/java/com/android/internal/telephony/ServiceStateTracker.java
+ADD	RILSigEvaluator.java_0f4ce652591a0441498a19a272828472	frameworks/opt/telephony/src/java/com/android/internal/telephony/RILSigEvaluator.java
+PATCH	InboundSmsHandler.java_71007d21790c91c588220f0a099978f5.patch	frameworks/opt/telephony/src/java/com/android/internal/telephony/InboundSmsHandler.java
+PATCH	GsmCdmaCallTracker.java_ff7dd4e185e93dd9891a22e7c86f8509.patch	frameworks/opt/telephony/src/java/com/android/internal/telephony/GsmCdmaCallTracker.java
+ADD	RILDefender.java_250089e2004f92f995a2c22ec7fed754	frameworks/opt/telephony/src/java/com/android/internal/telephony/RILDefender.java
+PATCH	IccSmsInterfaceManager.java_0273a9db952e69cf84e2beae2f805aad.patch	frameworks/opt/telephony/src/java/com/android/internal/telephony/IccSmsInterfaceManager.java
+PATCH	CdmaSMSDispatcher.java_a762c354b9c40f0b1773affe9fa250a5.patch	frameworks/opt/telephony/src/java/com/android/internal/telephony/cdma/CdmaSMSDispatcher.java
+PATCH	CatService.java_6deec1d05c88cce49eb8d4767b38990b.patch	frameworks/opt/telephony/src/java/com/android/internal/telephony/cat/CatService.java
+PATCH	GsmInboundSmsHandler.java_d1a4119880235204a5a796a71e0c9bc7.patch	frameworks/opt/telephony/src/java/com/android/internal/telephony/gsm/GsmInboundSmsHandler.java
+PATCH	GsmSMSDispatcher.java_d5a0f1fd07fa8ff248c576bce9f939d8.patch	frameworks/opt/telephony/src/java/com/android/internal/telephony/gsm/GsmSMSDispatcher.java
+ADD	ProcessUtil.java_128b0e8735f62106f9a77dbd17a91913	frameworks/opt/telephony/src/java/com/android/internal/telephony/util/ProcessUtil.java
+PATCH	SmsMessage.java_7cc617549b124faa9b8dc96c0275ddd6.patch	frameworks/base/telephony/java/com/android/internal/telephony/gsm/SmsMessage.java

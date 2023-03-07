@@ -1,0 +1,162 @@
+--- /home/haohuang/backup/aosp12-SQ1A.220205.002/frameworks/opt/telephony/src/java/com/android/internal/telephony/ServiceStateTracker.java	2023-03-05 03:52:29.314333070 +0000
++++ /home/haohuang/aosp12-SQ1A.220205.002/frameworks/opt/telephony/src/java/com/android/internal/telephony/ServiceStateTracker.java	2023-03-05 22:25:03.050709685 +0000
+@@ -140,6 +140,11 @@
+ import java.util.regex.PatternSyntaxException;
+ import java.util.stream.Collectors;
+ 
++import android.telephony.CellIdentityNr;
++import android.telephony.CellState;
++import com.android.internal.telephony.OperatorInfo;
++import com.android.internal.telephony.RILDefender;
++
+ /**
+  * {@hide}
+  */
+@@ -690,6 +695,16 @@
+         mCi.registerForCellInfoList(this, EVENT_UNSOL_CELL_INFO_LIST, null);
+         mCi.registerForPhysicalChannelConfiguration(this, EVENT_PHYSICAL_CHANNEL_CONFIG, null);
+ 
++        // RILDefender
++        // init shared preferences
++        RILDefender.initSp(phone.getContext());
++        // RILDefender: register broadcast receiver for SP update
++        IntentFilter mFilter = new IntentFilter();
++        mFilter.addAction(RILDefender.ACTION_UPDATE_SP);
++        mFilter.addAction(RILDefender.ACTION_UPDATE_SOURCE);
++        mFilter.addAction(RILDefender.ACTION_UPDATE_YAML);
++        phone.getContext().registerReceiver(RILDefender.mSpReceiver, mFilter);
++
+         mSubscriptionController = SubscriptionController.getInstance();
+         mSubscriptionManager = SubscriptionManager.from(phone.getContext());
+         mSubscriptionManager.addOnSubscriptionsChangedListener(
+@@ -1274,6 +1289,42 @@
+                         loge("Invalid CellInfo result");
+                     } else {
+                         cellInfo = (List<CellInfo>) ar.result;
++
++                        for (CellInfo ci: cellInfo) {
++                            CellIdentity cellId = ci.getCellIdentity();
++                            int arfcn = getArfcnFromCellIdentity(cellId);
++                            int cid = (int) getCidFromCellIdentity(cellId);
++                            int ss = ci.getCellSignalStrength().getDbm();
++
++                            CellState cellState = new CellState();
++                            cellState.initFromCellIdentity(cellId);
++                            cellState.updateSignalStrength(ss);
++
++                            if (!cellState.isValid()) {
++                                // android will sometimes scan incomplete info, skip it...
++                                continue;
++                            }
++
++                            List<CellState> historyStates = RILDefender.historyStates;
++
++                            boolean witness = false;
++                            for (CellState hcs: historyStates) {
++                                if (hcs.equals(cellState)) {
++                                    // found in history
++                                    witness = true;
++                                    // update signal strength if seen
++                                    hcs.updateSignalStrength(ss);
++                                    break;
++                                }
++                            }
++
++                            if (!witness) {
++                                Rlog.d("RILDefender", "Found new cell " + cellState);
++                                // add cell info to history
++                                RILDefender.addState(cellState);
++                            }
++                        }
++
+                         updateOperatorNameForCellInfo(cellInfo);
+                         mLastCellInfoList = cellInfo;
+                         mPhone.notifyCellInfo(cellInfo);
+@@ -2580,6 +2631,39 @@
+         }
+     }
+ 
++    private static int getLacFromCellIdentity(CellIdentity id) {
++        if (id == null) return -1;
++        int lac = -1;
++        switch(id.getType()) {
++            case CellInfo.TYPE_GSM: lac = ((CellIdentityGsm) id).getLac(); break;
++            case CellInfo.TYPE_WCDMA: lac = ((CellIdentityWcdma) id).getLac(); break;
++            case CellInfo.TYPE_TDSCDMA: lac = ((CellIdentityTdscdma) id).getLac(); break;
++            case CellInfo.TYPE_LTE: lac = ((CellIdentityLte) id).getTac(); break;
++            case CellInfo.TYPE_NR: lac = ((CellIdentityNr) id).getTac(); break;
++            default: break;
++        }
++        if (lac == Integer.MAX_VALUE) lac = -1;
++
++        return lac;
++    }
++
++    private static int getArfcnFromCellIdentity(CellIdentity id) {
++        if (id == null) return -1;
++        int arfcn = -1;
++        switch(id.getType()) {
++            case CellInfo.TYPE_GSM: arfcn = ((CellIdentityGsm) id).getArfcn(); break;
++            case CellInfo.TYPE_WCDMA: arfcn = ((CellIdentityWcdma) id).getUarfcn(); break;
++            case CellInfo.TYPE_TDSCDMA: arfcn = ((CellIdentityTdscdma) id).getUarfcn(); break;
++            case CellInfo.TYPE_LTE: arfcn = ((CellIdentityLte) id).getEarfcn(); break;
++            case CellInfo.TYPE_NR: arfcn = ((CellIdentityNr) id).getNrarfcn(); break;
++            default: break;
++        }
++        if (arfcn == Integer.MAX_VALUE) arfcn = -1;
++
++        return arfcn;
++    }
++
++
+     private void setPhyCellInfoFromCellIdentity(ServiceState ss, CellIdentity cellIdentity) {
+         if (cellIdentity == null) {
+             if (DBG) {
+@@ -3659,6 +3743,14 @@
+                     && (newWwanDataRat <= ServiceState.RIL_RADIO_TECHNOLOGY_EVDO_A));
+         }
+ 
++        if (hasChanged) {
++            // RILDefender: update current cell state if info not complete
++            if (RILDefender.getCurrentCellState() != null && !RILDefender.getCurrentCellState().isValid()) {
++                RILDefender.getCurrentCellState().initFromCellIdentity(primaryCellIdentity);
++                Rlog.d("RILDefender", "Updated new cell: " + RILDefender.mCurrentCellState);
++            }
++        }
++
+         if (DBG) {
+             log("pollStateDone:"
+                     + " hasRegistered = " + hasRegistered
+@@ -3705,6 +3797,23 @@
+                 EventLog.writeEvent(EventLogTags.GSM_RAT_SWITCHED_NEW, cid,
+                         mSS.getRilVoiceRadioTechnology(),
+                         mNewSS.getRilVoiceRadioTechnology());
++
++                // RILDefender network has switched to a new cell
++                CellState cellState = new CellState();
++                cellState.initFromCellIdentity(primaryCellIdentity);
++                cellState.setOperatorNumeric(mNewSS.getOperatorNumeric());
++                cellState.setOperatorAlphaLong(mNewSS.getOperatorAlphaLong());
++                cellState.setOperatorAlphaShort(mNewSS.getOperatorAlphaShort());
++
++                // set current cell state
++                RILDefender.mCurrentCellState = cellState;
++
++                // start a blank signal history
++                RILDefender.clearSignals();
++
++                RILDefender.addState(cellState);
++                Rlog.d("RILDefender", "New cell connected: " + cellState);
++
+                 if (DBG) {
+                     log("RAT switched "
+                             + ServiceState.rilRadioTechnologyToString(
+@@ -5324,6 +5433,8 @@
+ 
+             PersistableBundle config = getCarrierConfig();
+             mSignalStrength.updateLevel(config, mSS);
++            // RILDefender add signal strength to history
++            RILDefender.updateSignal(mSignalStrength);
+         } else {
+             log("onSignalStrengthResult() Exception from RIL : " + ar.exception);
+             mSignalStrength = new SignalStrength();

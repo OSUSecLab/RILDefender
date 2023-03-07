@@ -68,7 +68,7 @@ You must start a bash shell if you are not using it. Then, from the AOSP_ROOT di
 
 `$ source build/envsetup.sh `
 
-Select the target build
+Select the target build (refer to [https://source.android.com/docs/setup/build/running#selecting-device-build](https://source.android.com/docs/setup/build/running#selecting-device-build) for the list of device build configurations):
 
 `$ lunch <device_build>`
 
@@ -103,6 +103,12 @@ For instance, to apply the AOSP10 RILDefender patches:
 
 ```$ patch_apply.py -a <AOSP_ROOT> -p patches_aosp10_QP1A.190711.019```
 
+Currently, we have released four sets of RILDefender patches for AOSP 10-13:
+
+- **AOSP 10 (QP1A.190711.019)**: [patches\_aosp10\_QP1A.190711.019](./patches_aosp10_QP1A.190711.019)
+- **AOSP 11 (RQ3A.211001.001)**: [patches\_aosp11\_RQ3A.211001.001](./patches_aosp11_RQ3A.211001.001)
+- **AOSP 12 (SQ1A.220205.002)**: [patches\_aosp12\_SQ1A.220205.002](./patches_aosp12_SQ1A.220205.002)
+- **AOSP 13 (TP1A.221005.002)**: [patches\_aosp13\_TP1A.221005.002](./patches_aosp13_TP1A.221005.002)
 
 ## V. Compile the RILDefender AOSP Image        
   
@@ -121,7 +127,7 @@ $ make -j8
 ```
 
 
-The compilation may fail in some stages and you need to run the following 3 commands. (Each step took less than a minute)   
+The compilation may fail in some stages and you need to run the following 3 commands. (**Should not happen now after removing some unncessary APIs**)   
  
 ```
 $ make system-api-stubs-docs-update-current-api
@@ -145,12 +151,12 @@ $ zip rildefender.zip ./*
 Install the Compiled Image into your Android device. Before flashing, make sure the bootloader is [unlocked](https://source.android.com/docs/core/architecture/bootloader/locking_unlocking), which can be enabled in the settings UI and then execute the following command
 
 ```
-$ fastboot oem unlock  
+$ fastboot flashing unlock  
 ```
 
 at the bootloader or other model-specific commands that are available online (Note: the above will not work for vendor lock-in devices).
 
-The following shows the method used to install `RILDefender.zip` into an Android smartphone from a machine that has the [Android SDK Platform Tools](https://developer.android.com/studio/releases/platform-tools) ([adb](https://developer.android.com/studio/command-line/adb) and [fastboot](https://android.googlesource.com/platform/system/core/+/master/fastboot/#fastboot)) installed.
+The following shows the method used to install `rildefender.zip` into an Android smartphone from a machine that has the [Android SDK Platform Tools](https://developer.android.com/studio/releases/platform-tools) ([adb](https://developer.android.com/studio/command-line/adb) and [fastboot](https://android.googlesource.com/platform/system/core/+/master/fastboot/#fastboot)) installed.
 
 - Connect phone to computer via USB. (ensure your phone has [developer mode](https://developer.android.com/studio/debug/dev-options) enabled)
 - Initiate ADB from computer with phone attached and on (phone will prompt for  permission)   
@@ -194,7 +200,6 @@ For detailed instructions, please refer to the RILDefender app [README](RILDefen
 ## VIII. TODO
 
 - Sender SMS whitelisting
-- Release RILDefender for AOSP7, 11, 12, 13
 - Extend RILDefender's support for other AOSP versions
 
 
