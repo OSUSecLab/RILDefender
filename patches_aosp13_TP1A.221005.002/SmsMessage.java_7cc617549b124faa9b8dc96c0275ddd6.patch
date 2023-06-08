@@ -20,8 +20,3 @@
      public int getNumOfVoicemails() {
          /*
           * Order of priority if multiple indications are present is 1.UDH,
-@@ -1661,4 +1665,3 @@
-         return mVoiceMailCount;
-     }
- }
--

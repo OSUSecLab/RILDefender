@@ -105,8 +105,3 @@
          Intent intent = new Intent(AppInterface.CAT_CMD_ACTION);
          intent.putExtra( "STK CMD", cmdMsg);
          intent.putExtra("SLOT_ID", mSlotId);
-@@ -1183,4 +1260,3 @@
-         BackupManager.dataChanged("com.android.providers.settings");
-     }
- }
--

@@ -64,8 +64,3 @@
          if ((smsHeader == null) || (smsHeader.concatRef == null)) {
              // Message is not concatenated.
              int destPort = -1;
-@@ -2167,4 +2217,3 @@
-                 List<SmsFilter> remainingFilters);
-     }
- }
--

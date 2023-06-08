@@ -42,8 +42,3 @@
          if (Rlog.isLoggable("SMS", Log.VERBOSE)) {
              log("sendStoredText: scAddr=" + scAddress + " messageUri=" + messageUri
                      + " sentIntent=" + sentIntent + " deliveryIntent=" + deliveryIntent);
-@@ -1514,4 +1542,3 @@
-         pw.flush();
-     }
- }
--

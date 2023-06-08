@@ -12,8 +12,3 @@
          } else {
              log("onSignalStrengthResult() Exception from RIL : " + ar.exception);
              mSignalStrength = new SignalStrength();
-@@ -1113,4 +1116,3 @@
-         mLocalLog.log(TAG + ": " + msg);
-     }
- }
--
